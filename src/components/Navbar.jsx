@@ -70,7 +70,7 @@ export default function Navbar() {
               lineHeight: 1,
             }}
           >
-            CL<span style={{ color: "#e53935" }}>.</span> Thermoservice
+            Thermoservice
           </div>
         </a>
 
@@ -180,9 +180,7 @@ export default function Navbar() {
                   alt="CL Thermoservice"
                   style={{ width: 40, height: 40, borderRadius: 12 }}
                 />
-                <div style={{ fontWeight: 1000 }}>
-                  CL<span style={{ color: "#e53935" }}>.</span> Thermoservice
-                </div>
+                <div style={{ fontWeight: 1000 }}>Thermoservice</div>
               </div>
 
               <button
