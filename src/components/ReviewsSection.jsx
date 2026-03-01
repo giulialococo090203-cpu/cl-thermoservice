@@ -5,7 +5,7 @@ import Reveal from "./Reveal";
 
 // Expected Supabase table: public.reviews
 // Columns: id, created_at, name, rating, message (NOT NULL)
-// Optional: reply_text, replied_at
+// Optional: technician_name, reply_text, replied_at
 
 function Stars({ value, onChange, size = 18, readOnly = false }) {
   const stars = [1, 2, 3, 4, 5];
@@ -45,6 +45,7 @@ export default function ReviewsSection() {
 
   // form
   const [name, setName] = useState("");
+  const [technicianName, setTechnicianName] = useState(""); // ✅ NEW
   const [rating, setRating] = useState(5);
   const [message, setMessage] = useState("");
 
@@ -60,7 +61,7 @@ export default function ReviewsSection() {
     try {
       const { data, error } = await supabase
         .from("reviews")
-        .select("id, created_at, name, rating, message, reply_text, replied_at")
+        .select("id, created_at, name, technician_name, rating, message, reply_text, replied_at")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -84,6 +85,7 @@ export default function ReviewsSection() {
     setErrorMsg("");
 
     const safeName = name.trim();
+    const safeTech = technicianName.trim(); // ✅ NEW
     const safeMsg = message.trim();
 
     if (!safeName) return setErrorMsg("Inserisci il nome.");
@@ -93,6 +95,7 @@ export default function ReviewsSection() {
     try {
       const payload = {
         name: safeName,
+        technician_name: safeTech || null, // ✅ NEW (opzionale)
         rating: Number(rating) || 5,
         message: safeMsg,
       };
@@ -102,6 +105,7 @@ export default function ReviewsSection() {
 
       setOkMsg("Recensione inviata. Grazie.");
       setName("");
+      setTechnicianName(""); // ✅ NEW reset
       setRating(5);
       setMessage("");
       await load();
@@ -221,6 +225,13 @@ export default function ReviewsSection() {
                       </div>
                     </div>
 
+                    {/* ✅ NEW: tecnico */}
+                    {r.technician_name ? (
+                      <div style={{ marginTop: 6, fontWeight: 850, color: "rgba(15,23,42,.72)" }}>
+                        Tecnico: <span style={{ fontWeight: 950, color: "#0b1220" }}>{r.technician_name}</span>
+                      </div>
+                    ) : null}
+
                     <div style={{ marginTop: 8, fontWeight: 750, color: "rgba(15,23,42,.80)", lineHeight: 1.45 }}>
                       {r.message}
                     </div>
@@ -272,6 +283,20 @@ export default function ReviewsSection() {
                   borderRadius: 18,
                   border: "1px solid rgba(15,23,42,.12)",
                   fontWeight: 850,
+                  outline: "none",
+                }}
+              />
+
+              {/* ✅ NEW: tecnico */}
+              <input
+                value={technicianName}
+                onChange={(e) => setTechnicianName(e.target.value)}
+                placeholder="Tecnico che ha effettuato il lavoro (opzionale)"
+                style={{
+                  padding: "14px 14px",
+                  borderRadius: 18,
+                  border: "1px solid rgba(15,23,42,.12)",
+                  fontWeight: 800,
                   outline: "none",
                 }}
               />
