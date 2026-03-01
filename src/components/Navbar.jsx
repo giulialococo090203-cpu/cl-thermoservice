@@ -75,29 +75,16 @@ export default function Navbar() {
         </a>
 
         {/* MENU DESKTOP */}
-        <nav className="navLinks" style={{ display: "flex", gap: 22, alignItems: "center" }}>
+        <nav
+          className="navLinks"
+          style={{ display: "flex", gap: 22, alignItems: "center" }}
+        >
           <a href="#servizi">Servizi</a>
-          <a href="#zona">Zona copertura</a>
+          <a href="#zona">Zona</a>
           <a href="#marchi">Marchi</a>
           <a href="#certificazioni">Certificazioni</a>
           <a href="#lavori">Lavori</a>
-
-          {/* ✅ CTA: porta direttamente al FORM recensione */}
-          <a
-            href="#lascia-recensione"
-            style={{
-              padding: "10px 16px",
-              borderRadius: 14,
-              background: "#e53935",
-              color: "white",
-              fontWeight: 900,
-              textDecoration: "none",
-              boxShadow: "0 12px 26px rgba(229,57,53,0.25)",
-            }}
-          >
-            ⭐ Lascia una recensione
-          </a>
-
+          <a href="#recensioni">Recensioni</a>
           <a href="#preventivo">Preventivo</a>
           <a href="#contatti">Contatti</a>
         </nav>
@@ -179,7 +166,14 @@ export default function Navbar() {
             }}
           >
             {/* top */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+              }}
+            >
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <img
                   src="/favicon.png"
@@ -229,8 +223,7 @@ export default function Navbar() {
                 ["#marchi", "Marchi"],
                 ["#certificazioni", "Certificazioni"],
                 ["#lavori", "Lavori"],
-                // ✅ va al form
-                ["#lascia-recensione", "⭐ Lascia una recensione"],
+                ["#recensioni", "Recensioni"],
                 ["#preventivo", "Preventivo"],
                 ["#contatti", "Contatti"],
               ].map(([href, label]) => (
