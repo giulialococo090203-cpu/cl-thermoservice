@@ -1,4 +1,4 @@
-import { ShieldCheck, FileCheck2, Wrench } from "lucide-react";
+import { ShieldCheck, FileCheck2, Wrench, BadgeCheck } from "lucide-react";
 import Reveal from "./Reveal";
 
 export default function CertificationsSection() {
@@ -17,7 +17,9 @@ export default function CertificationsSection() {
           <div className="grid2">
             <Reveal>
               <div className="card serviceCard">
-                <div className="iconBox"><ShieldCheck size={22} /></div>
+                <div className="iconBox">
+                  <ShieldCheck size={22} />
+                </div>
                 <div>
                   <div className="serviceTitle">Sicurezza</div>
                   <p className="serviceDesc">
@@ -29,7 +31,9 @@ export default function CertificationsSection() {
 
             <Reveal>
               <div className="card serviceCard">
-                <div className="iconBox"><FileCheck2 size={22} /></div>
+                <div className="iconBox">
+                  <FileCheck2 size={22} />
+                </div>
                 <div>
                   <div className="serviceTitle">Conformità</div>
                   <p className="serviceDesc">
@@ -41,7 +45,9 @@ export default function CertificationsSection() {
 
             <Reveal>
               <div className="card serviceCard">
-                <div className="iconBox"><Wrench size={22} /></div>
+                <div className="iconBox">
+                  <Wrench size={22} />
+                </div>
                 <div>
                   <div className="serviceTitle">Garanzia lavori</div>
                   <p className="serviceDesc">
@@ -53,7 +59,9 @@ export default function CertificationsSection() {
 
             <Reveal>
               <div className="card serviceCard">
-                <div className="iconBox">⭐</div>
+                <div className="iconBox">
+                  <BadgeCheck size={22} />
+                </div>
                 <div>
                   <div className="serviceTitle">Affidabilità</div>
                   <p className="serviceDesc">

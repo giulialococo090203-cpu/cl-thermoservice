@@ -94,13 +94,13 @@ export default function ReviewsSection() {
       const payload = {
         name: safeName,
         rating: Number(rating) || 5,
-        message: safeMsg, // <-- IMPORTANT: la tua tabella richiede message NOT NULL
+        message: safeMsg,
       };
 
       const { error } = await supabase.from("reviews").insert([payload]);
       if (error) throw error;
 
-      setOkMsg("Recensione inviata! Grazie 😊");
+      setOkMsg("Recensione inviata. Grazie.");
       setName("");
       setRating(5);
       setMessage("");
@@ -191,7 +191,7 @@ export default function ReviewsSection() {
               </div>
             ) : reviews.length === 0 ? (
               <div style={{ padding: 14, fontWeight: 900, opacity: 0.7 }}>
-                Nessuna recensione ancora. Sii il primo 🙂
+                Nessuna recensione ancora. Lascia la prima.
               </div>
             ) : (
               <div style={{ display: "grid", gap: 12 }}>

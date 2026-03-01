@@ -18,7 +18,7 @@ export default function Footer() {
           <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "center" }}>
             <img
               src="/favicon.png"
-              alt="CL Thermoservice"
+              alt="Thermoservice"
               style={{ width: 42, height: 42, borderRadius: 14 }}
             />
             <div style={{ fontSize: 22, fontWeight: 1000, color: "white" }}>

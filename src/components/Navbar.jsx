@@ -1,8 +1,22 @@
-import { useEffect, useState } from "react";
-import { Menu, X, PhoneCall } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Menu, X, PhoneCall, Mail, MessageCircle } from "lucide-react";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+
+  const links = useMemo(
+    () => [
+      ["#servizi", "Servizi"],
+      ["#zona", "Zona copertura"],
+      ["#marchi", "Marchi"],
+      ["#certificazioni", "Certificazioni"],
+      ["#lavori", "Lavori"],
+      ["#recensioni", "Recensioni"],
+      ["#preventivo", "Preventivo"],
+      ["#contatti", "Contatti"],
+    ],
+    []
+  );
 
   useEffect(() => {
     const onKey = (e) => {
@@ -22,6 +36,11 @@ export default function Navbar() {
   }, [open]);
 
   const close = () => setOpen(false);
+
+  const WHATSAPP_NUMBER = "3662085556";
+  const whatsappUrl = `https://wa.me/39${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+    "Ciao! Vorrei informazioni su un intervento."
+  )}`;
 
   return (
     <>
@@ -54,7 +73,7 @@ export default function Navbar() {
         >
           <img
             src="/favicon.png"
-            alt="CL Thermoservice"
+            alt="Thermoservice"
             style={{
               width: 46,
               height: 46,
@@ -75,18 +94,12 @@ export default function Navbar() {
         </a>
 
         {/* MENU DESKTOP */}
-        <nav
-          className="navLinks"
-          style={{ display: "flex", gap: 22, alignItems: "center" }}
-        >
-          <a href="#servizi">Servizi</a>
-          <a href="#zona">Zona</a>
-          <a href="#marchi">Marchi</a>
-          <a href="#certificazioni">Certificazioni</a>
-          <a href="#lavori">Lavori</a>
-          <a href="#recensioni">Recensioni</a>
-          <a href="#preventivo">Preventivo</a>
-          <a href="#contatti">Contatti</a>
+        <nav className="navLinks" style={{ display: "flex", gap: 22, alignItems: "center" }}>
+          {links.map(([href, label]) => (
+            <a key={href} href={href}>
+              {label}
+            </a>
+          ))}
         </nav>
 
         {/* CTA + Mobile button */}
@@ -144,8 +157,8 @@ export default function Navbar() {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(6,12,24,.45)",
-            backdropFilter: "blur(6px)",
+            background: "rgba(6,12,24,.55)",
+            backdropFilter: "blur(10px)",
             display: "flex",
             justifyContent: "flex-end",
             zIndex: 2000,
@@ -154,15 +167,18 @@ export default function Navbar() {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: "min(360px, 92vw)",
+              width: "min(380px, 92vw)",
               height: "100dvh",
               maxHeight: "100dvh",
-              background: "rgba(255,255,255,.94)",
+              background:
+                "radial-gradient(900px 340px at 10% 0%, rgba(31,75,143,.10), transparent 60%), rgba(255,255,255,.96)",
               borderLeft: "1px solid rgba(15,23,42,.10)",
               padding: 18,
               display: "flex",
               flexDirection: "column",
               overflow: "hidden",
+              boxShadow: "-18px 0 60px rgba(2,6,23,.25)",
+              animation: "slideIn 220ms ease both",
             }}
           >
             {/* top */}
@@ -177,10 +193,15 @@ export default function Navbar() {
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <img
                   src="/favicon.png"
-                  alt="CL Thermoservice"
-                  style={{ width: 40, height: 40, borderRadius: 12 }}
+                  alt="Thermoservice"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    boxShadow: "0 10px 20px rgba(15,23,42,.10)",
+                  }}
                 />
-                <div style={{ fontWeight: 1000 }}>Thermoservice</div>
+                <div style={{ fontWeight: 1000, letterSpacing: "-0.02em" }}>Thermoservice</div>
               </div>
 
               <button
@@ -203,6 +224,15 @@ export default function Navbar() {
               </button>
             </div>
 
+            {/* divider */}
+            <div
+              style={{
+                marginTop: 14,
+                height: 1,
+                background: "rgba(15,23,42,.08)",
+              }}
+            />
+
             {/* area scrollabile */}
             <div
               style={{
@@ -215,74 +245,116 @@ export default function Navbar() {
                 flex: "1 1 auto",
               }}
             >
-              {[
-                ["#servizi", "Servizi"],
-                ["#zona", "Zona copertura"],
-                ["#marchi", "Marchi"],
-                ["#certificazioni", "Certificazioni"],
-                ["#lavori", "Lavori"],
-                ["#recensioni", "Recensioni"],
-                ["#preventivo", "Preventivo"],
-                ["#contatti", "Contatti"],
-              ].map(([href, label]) => (
+              {links.map(([href, label]) => (
                 <a
                   key={href}
                   href={href}
                   onClick={close}
                   style={{
                     padding: "14px 14px",
-                    borderRadius: 16,
+                    borderRadius: 18,
                     border: "1px solid rgba(15,23,42,.08)",
-                    background: "rgba(255,255,255,.90)",
-                    fontWeight: 950,
+                    background: "rgba(255,255,255,.92)",
+                    fontWeight: 900,
                     textDecoration: "none",
                     color: "#0b1220",
-                    flex: "0 0 auto",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
                   }}
                 >
-                  {label}
+                  <span>{label}</span>
+                  <span style={{ opacity: 0.55, fontWeight: 900 }}>→</span>
                 </a>
               ))}
+            </div>
 
-              {/* CTA */}
-              <div style={{ display: "grid", gap: 10, marginTop: 6 }}>
-                <a
-                  href="tel:091406911"
-                  onClick={close}
-                  style={{
-                    padding: "14px 14px",
-                    borderRadius: 16,
-                    background: "#e53935",
-                    color: "white",
-                    fontWeight: 1000,
-                    textDecoration: "none",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 10,
-                  }}
-                >
-                  <PhoneCall size={18} /> Chiama adesso
-                </a>
+            {/* CTA bottom fixed */}
+            <div style={{ marginTop: 14 }}>
+              <div
+                style={{
+                  padding: 14,
+                  borderRadius: 20,
+                  border: "1px solid rgba(15,23,42,.10)",
+                  background: "rgba(255,255,255,.92)",
+                  boxShadow: "0 14px 30px rgba(15,23,42,.10)",
+                }}
+              >
+                <div style={{ fontWeight: 950, color: "#0b1220", letterSpacing: "-0.01em" }}>
+                  Contatto rapido
+                </div>
+                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                  <a
+                    href="tel:091406911"
+                    onClick={close}
+                    style={{
+                      padding: "14px 14px",
+                      borderRadius: 16,
+                      background: "#e53935",
+                      color: "white",
+                      fontWeight: 1000,
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 10,
+                    }}
+                  >
+                    <PhoneCall size={18} /> Chiama adesso
+                  </a>
 
-                <a
-                  href="mailto:clthermoservice@virgilio.it"
-                  onClick={close}
-                  style={{
-                    padding: "14px 14px",
-                    borderRadius: 16,
-                    border: "1px solid rgba(15,23,42,.10)",
-                    background: "white",
-                    fontWeight: 1000,
-                    textDecoration: "none",
-                    textAlign: "center",
-                    color: "#0b1220",
-                  }}
-                >
-                  Scrivi una mail
-                </a>
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={close}
+                    style={{
+                      padding: "14px 14px",
+                      borderRadius: 16,
+                      background: "rgba(37, 211, 102, .12)",
+                      border: "1px solid rgba(37, 211, 102, .28)",
+                      color: "#0b1220",
+                      fontWeight: 1000,
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 10,
+                    }}
+                  >
+                    <MessageCircle size={18} /> WhatsApp
+                  </a>
+
+                  <a
+                    href="mailto:clthermoservice@virgilio.it"
+                    onClick={close}
+                    style={{
+                      padding: "14px 14px",
+                      borderRadius: 16,
+                      border: "1px solid rgba(15,23,42,.10)",
+                      background: "white",
+                      fontWeight: 1000,
+                      textDecoration: "none",
+                      textAlign: "center",
+                      color: "#0b1220",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 10,
+                    }}
+                  >
+                    <Mail size={18} /> Email
+                  </a>
+                </div>
               </div>
             </div>
+
+            <style>{`
+              @keyframes slideIn {
+                from { transform: translateX(14px); opacity: .0; }
+                to   { transform: translateX(0); opacity: 1; }
+              }
+            `}</style>
           </div>
         </div>
       )}

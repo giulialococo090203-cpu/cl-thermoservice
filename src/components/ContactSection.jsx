@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Reveal from "./Reveal";
-import { PhoneCall, Mail, MapPin, Clock, Navigation, X } from "lucide-react";
+import { PhoneCall, Mail, MapPin, Clock, Navigation, X, MessageCircle } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
 export default function ContactSection() {
@@ -13,6 +13,13 @@ export default function ContactSection() {
     }),
     []
   );
+
+  // ✅ WHATSAPP
+  const WHATSAPP_NUMBER = "393662085556"; // +39 366 208 5556
+  const whatsappLink = useMemo(() => {
+    const text = "Ciao, vorrei informazioni sui vostri servizi.";
+    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+  }, []);
 
   const [pos, setPos] = useState(null);
   const [geoStatus, setGeoStatus] = useState("idle");
@@ -169,6 +176,28 @@ export default function ContactSection() {
             </a>
           </Reveal>
 
+          {/* WHATSAPP */}
+          <Reveal>
+            <a
+              className="card serviceCard cardHover"
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: "none", color: "inherit" }}
+            >
+              <div className="iconBox">
+                <MessageCircle size={22} />
+              </div>
+              <div>
+                <div className="serviceTitle">WhatsApp</div>
+                <div style={{ fontWeight: 1000, fontSize: 20 }}>366 208 5556</div>
+                <div style={{ marginTop: 4, fontWeight: 800, opacity: 0.75, fontSize: 14 }}>
+                  Clicca per scrivere su WhatsApp →
+                </div>
+              </div>
+            </a>
+          </Reveal>
+
           {/* EMAIL -> apre MODAL */}
           <Reveal>
             <button
@@ -281,6 +310,27 @@ export default function ContactSection() {
               }}
             >
               📞 Chiama Adesso
+            </a>
+
+            <a
+              className="btnAnim"
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                padding: "14px 18px",
+                borderRadius: 16,
+                background: "#25D366",
+                color: "white",
+                fontWeight: 950,
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <MessageCircle size={18} />
+              WhatsApp
             </a>
           </div>
 

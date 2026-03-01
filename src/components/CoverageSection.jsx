@@ -1,4 +1,4 @@
-import { MapPin, Clock, Zap } from "lucide-react";
+import { MapPin, Clock, Zap, CheckCircle2 } from "lucide-react";
 import Reveal from "./Reveal";
 
 export default function CoverageSection() {
@@ -17,7 +17,9 @@ export default function CoverageSection() {
           <div className="grid2">
             <Reveal>
               <div className="card serviceCard">
-                <div className="iconBox"><MapPin size={22} /></div>
+                <div className="iconBox">
+                  <MapPin size={22} />
+                </div>
                 <div>
                   <div className="serviceTitle">Copertura</div>
                   <p className="serviceDesc">
@@ -29,7 +31,9 @@ export default function CoverageSection() {
 
             <Reveal>
               <div className="card serviceCard">
-                <div className="iconBox"><Clock size={22} /></div>
+                <div className="iconBox">
+                  <Clock size={22} />
+                </div>
                 <div>
                   <div className="serviceTitle">Orari</div>
                   <p className="serviceDesc">
@@ -41,7 +45,9 @@ export default function CoverageSection() {
 
             <Reveal>
               <div className="card serviceCard">
-                <div className="iconBox"><Zap size={22} /></div>
+                <div className="iconBox">
+                  <Zap size={22} />
+                </div>
                 <div>
                   <div className="serviceTitle">Urgenze</div>
                   <p className="serviceDesc">
@@ -53,7 +59,9 @@ export default function CoverageSection() {
 
             <Reveal>
               <div className="card serviceCard">
-                <div className="iconBox">✅</div>
+                <div className="iconBox">
+                  <CheckCircle2 size={22} />
+                </div>
                 <div>
                   <div className="serviceTitle">Preventivo chiaro</div>
                   <p className="serviceDesc">
