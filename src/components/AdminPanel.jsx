@@ -1,10 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 
-/**
- * ✅ ADMIN WHITELIST (metti qui le email che possono entrare nel pannello)
- * Aggiungi anche "test@a.it" se vuoi farlo entrare.
- */
 const ADMIN_EMAILS = [
   "admin@clthermoservice.it",
   "clthermoservice@virgilio.it",
@@ -45,11 +41,7 @@ function openPrintableWindow(title, html) {
       table { width: 100%; border-collapse: collapse; font-size: 12px; }
       th, td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
       th { background: #f4f6f8; text-align: left; }
-      .tag { font-size: 11px; color: #333; background: #eef2ff; padding: 2px 6px; border-radius: 999px; display: inline-block; }
-      @media print {
-        body { padding: 0; }
-        .no-print { display: none !important; }
-      }
+      @media print { body { padding: 0; } .no-print { display: none !important; } }
     </style>
   </head>
   <body>
@@ -63,9 +55,7 @@ function openPrintableWindow(title, html) {
 }
 
 export default function AdminPanel() {
-  // -------------------
   // AUTH
-  // -------------------
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
@@ -120,9 +110,7 @@ export default function AdminPanel() {
     setSession(null);
   };
 
-  // -------------------
-  // QUOTES (Richieste preventivo)
-  // -------------------
+  // QUOTES
   const [quotes, setQuotes] = useState([]);
   const [quotesLoading, setQuotesLoading] = useState(false);
   const [quotesError, setQuotesError] = useState("");
@@ -140,7 +128,7 @@ export default function AdminPanel() {
 
       if (error) throw error;
       setQuotes(data || []);
-      setSelectedQuoteIds(new Set()); // reset selezione quando ricarichi
+      setSelectedQuoteIds(new Set());
     } catch (err) {
       setQuotesError(err?.message || "Errore caricamento richieste");
     } finally {
@@ -153,7 +141,7 @@ export default function AdminPanel() {
     loadQuotes();
   }, [isAdmin]);
 
-  const filteredQuotes = useMemo(() => {
+  const filteredQuotes = (() => {
     const q = query.trim().toLowerCase();
     if (!q) return quotes;
     return quotes.filter((r) => {
@@ -162,7 +150,7 @@ export default function AdminPanel() {
       }`.toLowerCase();
       return s.includes(q);
     });
-  }, [quotes, query]);
+  })();
 
   const toggleQuoteSelection = (id) => {
     setSelectedQuoteIds((prev) => {
@@ -173,44 +161,29 @@ export default function AdminPanel() {
     });
   };
 
-  const selectAllVisibleQuotes = () => {
-    setSelectedQuoteIds(new Set(filteredQuotes.map((q) => q.id)));
-  };
-
-  const deselectAllQuotes = () => {
-    setSelectedQuoteIds(new Set());
-  };
+  const selectAllVisibleQuotes = () => setSelectedQuoteIds(new Set(filteredQuotes.map((q) => q.id)));
+  const deselectAllQuotes = () => setSelectedQuoteIds(new Set());
 
   const deleteOneQuote = async (id) => {
     if (!confirm("Eliminare questa richiesta?")) return;
     const { error } = await supabase.from("quotes").delete().eq("id", id);
-    if (error) {
-      alert("Errore eliminazione: " + error.message);
-      return;
-    }
+    if (error) return alert("Errore eliminazione: " + error.message);
     await loadQuotes();
   };
 
   const deleteSelectedQuotes = async () => {
     if (selectedQuoteIds.size === 0) return;
     if (!confirm(`Eliminare ${selectedQuoteIds.size} richieste selezionate?`)) return;
-
     const ids = Array.from(selectedQuoteIds);
     const { error } = await supabase.from("quotes").delete().in("id", ids);
-    if (error) {
-      alert("Errore eliminazione: " + error.message);
-      return;
-    }
+    if (error) return alert("Errore eliminazione: " + error.message);
     await loadQuotes();
   };
 
   const clearQuotesDB = async () => {
     if (!confirm("ATTENZIONE: vuoi cancellare TUTTE le richieste dal database?")) return;
     const { error } = await supabase.from("quotes").delete().neq("id", -1);
-    if (error) {
-      alert("Errore pulizia: " + error.message);
-      return;
-    }
+    if (error) return alert("Errore pulizia: " + error.message);
     await loadQuotes();
   };
 
@@ -252,114 +225,16 @@ export default function AdminPanel() {
         </tbody>
       </table>
       <div class="no-print muted" style="margin-top: 14px;">
-        Suggerimento: nella finestra di stampa seleziona “Salva come PDF”.
+        Nella finestra di stampa seleziona “Salva come PDF”.
       </div>
     `;
-
     openPrintableWindow(
       onlySelected ? "PDF richieste (selezionate)" : "PDF richieste (tutte)",
       html
     );
   };
 
-  // -------------------
-  // WORKS (foto + descrizione) — Storage bucket "works"
-  // -------------------
-  const [works, setWorks] = useState([]);
-  const [worksLoading, setWorksLoading] = useState(false);
-  const [worksError, setWorksError] = useState("");
-
-  const [workTitle, setWorkTitle] = useState("");
-  const [workDesc, setWorkDesc] = useState("");
-  const [workFile, setWorkFile] = useState(null);
-
-  const loadWorks = async () => {
-    setWorksError("");
-    setWorksLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("works")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setWorks(data || []);
-    } catch (err) {
-      setWorksError(err?.message || "Errore caricamento lavori");
-    } finally {
-      setWorksLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!isAdmin) return;
-    loadWorks();
-  }, [isAdmin]);
-
-  const uploadWork = async (e) => {
-    e.preventDefault();
-    if (!workFile) {
-      alert("Seleziona una foto.");
-      return;
-    }
-    try {
-      setWorksError("");
-
-      const ext = workFile.name.split(".").pop()?.toLowerCase() || "jpg";
-      const fileName = `${Date.now()}_${Math.random().toString(16).slice(2)}.${ext}`;
-      const path = `works/${fileName}`;
-
-      // Upload su bucket "works"
-      const { error: upErr } = await supabase.storage.from("works").upload(path, workFile, {
-        cacheControl: "3600",
-        upsert: false,
-      });
-      if (upErr) throw upErr;
-
-      // Url pubblico (bucket deve essere public)
-      const { data: pub } = supabase.storage.from("works").getPublicUrl(path);
-      const publicUrl = pub?.publicUrl || "";
-
-      const { error: insErr } = await supabase.from("works").insert([
-        {
-          title: workTitle || null,
-          description: workDesc || null,
-          image_path: path,
-          image_url: publicUrl,
-        },
-      ]);
-      if (insErr) throw insErr;
-
-      setWorkTitle("");
-      setWorkDesc("");
-      setWorkFile(null);
-      await loadWorks();
-    } catch (err) {
-      alert("Errore pubblicazione lavoro: " + (err?.message || err));
-    }
-  };
-
-  const deleteWork = async (w) => {
-    if (!confirm("Eliminare questo lavoro?")) return;
-    try {
-      // 1) elimina riga
-      const { error: delErr } = await supabase.from("works").delete().eq("id", w.id);
-      if (delErr) throw delErr;
-
-      // 2) elimina file
-      if (w.image_path) {
-        await supabase.storage.from("works").remove([w.image_path]);
-      }
-
-      await loadWorks();
-    } catch (err) {
-      alert("Errore eliminazione lavoro: " + (err?.message || err));
-    }
-  };
-
-  // -------------------
-  // REVIEWS
-  // -------------------
+  // REVIEWS (reply + delete)
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsError, setReviewsError] = useState("");
@@ -390,19 +265,13 @@ export default function AdminPanel() {
   const deleteReview = async (id) => {
     if (!confirm("Eliminare questa recensione?")) return;
     const { error } = await supabase.from("reviews").delete().eq("id", id);
-    if (error) {
-      alert("Errore eliminazione: " + error.message);
-      return;
-    }
+    if (error) return alert("Errore eliminazione: " + error.message);
     await loadReviews();
   };
 
   const replyReview = async (id, replyText) => {
     const txt = (replyText || "").trim();
-    if (!txt) {
-      alert("Scrivi una risposta.");
-      return;
-    }
+    if (!txt) return alert("Scrivi una risposta.");
     const { error } = await supabase
       .from("reviews")
       .update({
@@ -412,16 +281,11 @@ export default function AdminPanel() {
       })
       .eq("id", id);
 
-    if (error) {
-      alert("Errore risposta: " + error.message);
-      return;
-    }
+    if (error) return alert("Errore risposta: " + error.message);
     await loadReviews();
   };
 
-  // -------------------
-  // UI helpers
-  // -------------------
+  // UI
   const containerRef = useRef(null);
 
   const cardStyle = {
@@ -439,21 +303,15 @@ export default function AdminPanel() {
       fontWeight: 800,
       border: "1px solid rgba(15,23,42,0.12)",
       cursor: "pointer",
-      transition: "transform .06s ease, opacity .2s ease",
     };
     if (variant === "dark")
       return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
     if (variant === "ghost") return { ...base, background: "#fff", color: "#0b1224" };
-    if (variant === "danger")
-      return { ...base, background: "#ef4444", color: "#fff", border: "1px solid #ef4444" };
     if (variant === "softDanger")
       return { ...base, background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" };
     return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
   };
 
-  // -------------------
-  // RENDER
-  // -------------------
   return (
     <div
       ref={containerRef}
@@ -503,7 +361,7 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        {/* AUTH AREA */}
+        {/* AUTH */}
         <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
           {authLoading ? (
             <div style={{ fontWeight: 800, color: "#0b1224" }}>Caricamento…</div>
@@ -554,10 +412,6 @@ export default function AdminPanel() {
               <button style={{ ...btn("dark"), padding: "16px 18px", fontSize: 18 }} type="submit">
                 Entra
               </button>
-
-              <div style={{ color: "#64748b", fontWeight: 700 }}>
-                Se ti dice “non sei nella lista admin”, aggiungi la tua email in <b>ADMIN_EMAILS</b> qui sopra.
-              </div>
             </form>
           ) : !isAdmin ? (
             <div
@@ -578,9 +432,7 @@ export default function AdminPanel() {
               </div>
             </div>
           ) : (
-            <div style={{ fontWeight: 900, color: "#0b1224" }}>
-              ✅ Accesso admin confermato.
-            </div>
+            <div style={{ fontWeight: 900, color: "#0b1224" }}>✅ Accesso admin confermato.</div>
           )}
         </div>
 
@@ -592,19 +444,8 @@ export default function AdminPanel() {
               <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
                 Storico richieste preventivo
               </div>
-              <div style={{ marginTop: 8, color: "#475569", fontWeight: 700 }}>
-                Ordine per data/ora (più recenti sopra).
-              </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 10,
-                  marginTop: 14,
-                  alignItems: "center",
-                }}
-              >
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 14, alignItems: "center" }}>
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -655,11 +496,6 @@ export default function AdminPanel() {
                 </button>
               </div>
 
-              <div style={{ marginTop: 10, color: "#64748b", fontWeight: 800 }}>
-                Totale: <b>{quotes.length}</b> • Visibili: <b>{filteredQuotes.length}</b> • Selezionate:{" "}
-                <b>{selectedQuoteIds.size}</b>
-              </div>
-
               {quotesError && (
                 <div
                   style={{
@@ -681,7 +517,6 @@ export default function AdminPanel() {
                   style={{
                     display: "grid",
                     gridTemplateColumns: "40px 160px 240px 170px 240px 150px",
-                    gap: 0,
                     background: "#f3f6fb",
                     padding: "12px 10px",
                     fontWeight: 950,
@@ -699,9 +534,7 @@ export default function AdminPanel() {
                 {quotesLoading ? (
                   <div style={{ padding: 16, fontWeight: 800 }}>Caricamento…</div>
                 ) : filteredQuotes.length === 0 ? (
-                  <div style={{ padding: 16, fontWeight: 800, color: "#64748b" }}>
-                    Nessuna richiesta presente.
-                  </div>
+                  <div style={{ padding: 16, fontWeight: 800, color: "#64748b" }}>Nessuna richiesta presente.</div>
                 ) : (
                   filteredQuotes.map((q) => {
                     const checked = selectedQuoteIds.has(q.id);
@@ -727,13 +560,8 @@ export default function AdminPanel() {
                           <div style={{ fontWeight: 950, fontSize: 18, color: "#0b1224", lineHeight: 1.1 }}>
                             {(q.nome || "").toString()} {(q.cognome || "").toString()}
                           </div>
-                          <div style={{ color: "#64748b", fontWeight: 800, marginTop: 6 }}>
-                            ID: {q.id}
-                          </div>
                           {q.messaggio && (
-                            <div style={{ marginTop: 10, color: "#334155", fontWeight: 700 }}>
-                              {q.messaggio}
-                            </div>
+                            <div style={{ marginTop: 10, color: "#334155", fontWeight: 700 }}>{q.messaggio}</div>
                           )}
                         </div>
 
@@ -759,16 +587,13 @@ export default function AdminPanel() {
                   })
                 )}
               </div>
-
-              <div style={{ marginTop: 10, color: "#94a3b8", fontWeight: 800 }}>
-                “PDF” apre la stampa: scegli “Salva come PDF”.
-              </div>
             </div>
 
-            {/* REVIEWS */}
+            {/* ✅ REVIEWS: reply + delete */}
             <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
-              <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
-                Gestione recensioni
+              <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>Gestione recensioni</div>
+              <div style={{ marginTop: 8, color: "#475569", fontWeight: 700 }}>
+                Puoi rispondere come CL. Thermoservice oppure eliminare le recensioni.
               </div>
 
               {reviewsError && (
@@ -787,7 +612,7 @@ export default function AdminPanel() {
                 </div>
               )}
 
-              <div style={{ marginTop: 14 }}>
+              <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <button style={btn("ghost")} onClick={loadReviews}>
                   Aggiorna recensioni
                 </button>
@@ -796,145 +621,19 @@ export default function AdminPanel() {
               {reviewsLoading ? (
                 <div style={{ marginTop: 12, fontWeight: 800 }}>Caricamento…</div>
               ) : reviews.length === 0 ? (
-                <div style={{ marginTop: 12, fontWeight: 800, color: "#64748b" }}>
-                  Nessuna recensione presente.
-                </div>
+                <div style={{ marginTop: 12, fontWeight: 800, color: "#64748b" }}>Nessuna recensione presente.</div>
               ) : (
                 <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
                   {reviews.map((r) => (
-                    <ReviewRow key={r.id} review={r} onDelete={deleteReview} onReply={replyReview} />
+                    <AdminReviewRow
+                      key={r.id}
+                      review={r}
+                      onDelete={() => deleteReview(r.id)}
+                      onSave={(txt) => replyReview(r.id, txt)}
+                    />
                   ))}
                 </div>
               )}
-            </div>
-
-            {/* WORKS */}
-            <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
-              <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
-                Gestione lavori (foto + descrizione)
-              </div>
-              <div style={{ marginTop: 8, color: "#475569", fontWeight: 700 }}>
-                Pubblica, modifica o elimina lavori.
-              </div>
-
-              <form onSubmit={uploadWork} style={{ marginTop: 16, display: "grid", gap: 12 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <input
-                    value={workTitle}
-                    onChange={(e) => setWorkTitle(e.target.value)}
-                    placeholder="Titolo (opzionale)"
-                    style={{
-                      padding: "14px 16px",
-                      borderRadius: 18,
-                      border: "1px solid rgba(15,23,42,0.15)",
-                      fontWeight: 800,
-                    }}
-                  />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setWorkFile(e.target.files?.[0] || null)}
-                    style={{
-                      padding: "14px 16px",
-                      borderRadius: 18,
-                      border: "1px solid rgba(15,23,42,0.15)",
-                      fontWeight: 800,
-                      background: "#fff",
-                    }}
-                  />
-                </div>
-
-                <textarea
-                  value={workDesc}
-                  onChange={(e) => setWorkDesc(e.target.value)}
-                  placeholder="Descrizione lavoro"
-                  rows={4}
-                  style={{
-                    padding: "14px 16px",
-                    borderRadius: 18,
-                    border: "1px solid rgba(15,23,42,0.15)",
-                    fontWeight: 700,
-                    resize: "vertical",
-                  }}
-                />
-
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                  <button style={btn("danger")} type="submit">
-                    Pubblica lavoro
-                  </button>
-                  <button style={btn("ghost")} type="button" onClick={loadWorks}>
-                    Aggiorna lavori
-                  </button>
-                  {worksError && (
-                    <span style={{ color: "#b91c1c", fontWeight: 900 }}>{worksError}</span>
-                  )}
-                </div>
-              </form>
-
-              <div style={{ marginTop: 16 }}>
-                {worksLoading ? (
-                  <div style={{ fontWeight: 800 }}>Caricamento…</div>
-                ) : works.length === 0 ? (
-                  <div style={{ fontWeight: 800, color: "#64748b" }}>Nessun lavoro pubblicato.</div>
-                ) : (
-                  <div style={{ display: "grid", gap: 12 }}>
-                    {works.map((w) => (
-                      <div
-                        key={w.id}
-                        style={{
-                          background: "#fff",
-                          border: "1px solid rgba(15,23,42,0.12)",
-                          borderRadius: 20,
-                          padding: 14,
-                          display: "grid",
-                          gridTemplateColumns: "140px 1fr auto",
-                          gap: 14,
-                          alignItems: "center",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: 140,
-                            height: 90,
-                            borderRadius: 16,
-                            background: "#0b1224",
-                            overflow: "hidden",
-                            border: "1px solid rgba(15,23,42,0.12)",
-                          }}
-                        >
-                          {w.image_url ? (
-                            <img
-                              src={w.image_url}
-                              alt={w.title || "lavoro"}
-                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                            />
-                          ) : null}
-                        </div>
-
-                        <div>
-                          <div style={{ fontWeight: 950, fontSize: 22, color: "#0b1224", lineHeight: 1.1 }}>
-                            {w.title || "Lavoro"}
-                          </div>
-                          {w.description && (
-                            <div style={{ marginTop: 8, color: "#334155", fontWeight: 700 }}>
-                              {w.description}
-                            </div>
-                          )}
-                          <div style={{ marginTop: 8, color: "#94a3b8", fontWeight: 800 }}>
-                            {formatDateTime(w.created_at)} • ID: {w.id}
-                          </div>
-                        </div>
-
-                        <div style={{ display: "flex", gap: 10 }}>
-                          <button style={btn("ghost")} type="button" onClick={() => deleteWork(w)}>
-                            Elimina lavoro
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
           </>
         )}
@@ -943,9 +642,8 @@ export default function AdminPanel() {
   );
 }
 
-function ReviewRow({ review, onDelete, onReply }) {
+function AdminReviewRow({ review, onDelete, onSave }) {
   const [replyText, setReplyText] = useState(review.reply || "");
-  const rating = review.rating ?? "-";
 
   return (
     <div
@@ -961,7 +659,7 @@ function ReviewRow({ review, onDelete, onReply }) {
           <div style={{ fontWeight: 950, fontSize: 18, color: "#0b1224" }}>
             {review.name || "Cliente"}{" "}
             <span style={{ fontSize: 12, fontWeight: 900, color: "#334155", marginLeft: 6 }}>
-              ⭐ {rating}
+              ⭐ {review.rating ?? "-"}
             </span>
           </div>
           <div style={{ marginTop: 4, color: "#94a3b8", fontWeight: 800 }}>
@@ -970,27 +668,21 @@ function ReviewRow({ review, onDelete, onReply }) {
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
-          <button
-            type="button"
-            onClick={() => onDelete(review.id)}
-            style={{
-              borderRadius: 16,
-              padding: "10px 14px",
-              fontWeight: 900,
-              border: "1px solid #fecaca",
-              background: "#fee2e2",
-              color: "#991b1b",
-              cursor: "pointer",
-            }}
-          >
+          <button type="button" onClick={onDelete} style={{
+            borderRadius: 16,
+            padding: "10px 14px",
+            fontWeight: 900,
+            border: "1px solid #fecaca",
+            background: "#fee2e2",
+            color: "#991b1b",
+            cursor: "pointer",
+          }}>
             Elimina
           </button>
         </div>
       </div>
 
-      {review.text && (
-        <div style={{ marginTop: 10, fontWeight: 700, color: "#334155" }}>{review.text}</div>
-      )}
+      {review.text && <div style={{ marginTop: 10, fontWeight: 700, color: "#334155" }}>{review.text}</div>}
 
       <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
         <textarea
@@ -1010,7 +702,7 @@ function ReviewRow({ review, onDelete, onReply }) {
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <button
             type="button"
-            onClick={() => onReply(review.id, replyText)}
+            onClick={() => onSave(replyText)}
             style={{
               borderRadius: 16,
               padding: "10px 14px",
@@ -1024,12 +716,12 @@ function ReviewRow({ review, onDelete, onReply }) {
             Salva risposta
           </button>
 
-          {review.reply && (
+          {review.reply ? (
             <div style={{ alignSelf: "center", color: "#64748b", fontWeight: 800 }}>
               Risposto da: <b>{review.reply_by || "CL. Thermoservice"}</b>{" "}
               {review.reply_at ? `(${formatDateTime(review.reply_at)})` : ""}
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

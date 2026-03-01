@@ -12,6 +12,7 @@ export default function Navbar() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // blocca scroll pagina quando menu mobile è aperto
   useEffect(() => {
     const prev = document.body.style.overflow;
     if (open) document.body.style.overflow = "hidden";
@@ -25,6 +26,7 @@ export default function Navbar() {
   return (
     <>
       <header
+        className="navAnim"
         style={{
           background: "rgba(255,255,255,0.92)",
           backdropFilter: "blur(10px)",
@@ -80,9 +82,9 @@ export default function Navbar() {
           <a href="#certificazioni">Certificazioni</a>
           <a href="#lavori">Lavori</a>
 
-          {/* Bottone evidenziato recensioni */}
+          {/* ✅ CTA: porta direttamente al FORM recensione */}
           <a
-            href="#recensioni"
+            href="#lascia-recensione"
             style={{
               padding: "10px 16px",
               borderRadius: 14,
@@ -103,6 +105,7 @@ export default function Navbar() {
         {/* CTA + Mobile button */}
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <a
+            className="btnAnim"
             href="tel:091406911"
             style={{
               padding: "10px 14px",
@@ -114,7 +117,6 @@ export default function Navbar() {
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              boxShadow: "0 12px 26px rgba(229,57,53,0.22)",
             }}
           >
             <PhoneCall size={18} /> Chiama
@@ -139,6 +141,7 @@ export default function Navbar() {
           </button>
         </div>
 
+        {/* Responsive: nascondi desktop menu su mobile */}
         <style>{`
           @media(max-width: 980px){
             .navLinks{ display:none !important; }
@@ -226,7 +229,8 @@ export default function Navbar() {
                 ["#marchi", "Marchi"],
                 ["#certificazioni", "Certificazioni"],
                 ["#lavori", "Lavori"],
-                ["#recensioni", "⭐ Lascia una recensione"],
+                // ✅ va al form
+                ["#lascia-recensione", "⭐ Lascia una recensione"],
                 ["#preventivo", "Preventivo"],
                 ["#contatti", "Contatti"],
               ].map(([href, label]) => (
@@ -249,6 +253,7 @@ export default function Navbar() {
                 </a>
               ))}
 
+              {/* CTA */}
               <div style={{ display: "grid", gap: 10, marginTop: 6 }}>
                 <a
                   href="tel:091406911"

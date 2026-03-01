@@ -30,12 +30,23 @@ function Stars({ value, onChange, size = 22 }) {
   );
 }
 
+const inputStyle = {
+  width: "100%",
+  padding: "14px 16px",
+  borderRadius: 18,
+  border: "1px solid rgba(15,23,42,0.15)",
+  outline: "none",
+  fontWeight: 800,
+  fontSize: 16,
+  background: "rgba(255,255,255,0.95)",
+};
+
 export default function ReviewsSection() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadErr, setLoadErr] = useState("");
 
-  // form
+  // form clienti
   const [name, setName] = useState("");
   const [rating, setRating] = useState(5);
   const [text, setText] = useState("");
@@ -87,7 +98,6 @@ export default function ReviewsSection() {
       const { error } = await supabase.from("reviews").insert([payload]);
       if (error) throw error;
 
-      // pulizia form + reload lista
       setName("");
       setRating(5);
       setText("");
@@ -140,27 +150,20 @@ export default function ReviewsSection() {
           </div>
         </div>
 
-        <div
-          style={{
-            marginTop: 22,
-            display: "grid",
-            gridTemplateColumns: "1fr",
-            gap: 16,
-          }}
-        >
-          {/* FORM INSERIMENTO RECENSIONE (CLIENTI) */}
+        <div style={{ marginTop: 22, display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
+          {/* ✅ FORM (target del link Navbar) */}
           <div
+            id="lascia-recensione"
             style={{
               background: "rgba(255,255,255,0.9)",
               border: "1px solid rgba(15,23,42,0.10)",
               borderRadius: 22,
               padding: 18,
               boxShadow: "0 18px 50px rgba(2,6,23,0.06)",
+              scrollMarginTop: 90, // evita che la navbar sticky copra l'inizio
             }}
           >
-            <div style={{ fontWeight: 950, fontSize: 20, marginBottom: 10 }}>
-              Lascia una recensione
-            </div>
+            <div style={{ fontWeight: 950, fontSize: 20, marginBottom: 10 }}>Lascia una recensione</div>
 
             <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 240px", gap: 12 }}>
@@ -229,7 +232,7 @@ export default function ReviewsSection() {
             </form>
           </div>
 
-          {/* LISTA RECENSIONI */}
+          {/* LISTA */}
           <div
             style={{
               background: "rgba(255,255,255,0.9)",
@@ -239,9 +242,7 @@ export default function ReviewsSection() {
               boxShadow: "0 18px 50px rgba(2,6,23,0.06)",
             }}
           >
-            <div style={{ fontWeight: 950, fontSize: 20, marginBottom: 10 }}>
-              Cosa dicono i clienti
-            </div>
+            <div style={{ fontWeight: 950, fontSize: 20, marginBottom: 10 }}>Cosa dicono i clienti</div>
 
             {loadErr ? (
               <div
@@ -280,9 +281,7 @@ export default function ReviewsSection() {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                       <div>
-                        <div style={{ fontWeight: 950, fontSize: 18, color: "#0b1224" }}>
-                          {r.name}
-                        </div>
+                        <div style={{ fontWeight: 950, fontSize: 18, color: "#0b1224" }}>{r.name}</div>
                         <div style={{ marginTop: 6, color: "rgba(12,19,38,0.6)", fontWeight: 700, fontSize: 13 }}>
                           {new Date(r.created_at).toLocaleDateString("it-IT")}
                         </div>
@@ -290,15 +289,11 @@ export default function ReviewsSection() {
 
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <Stars value={r.rating} size={18} />
-                        <span style={{ fontWeight: 900, color: "rgba(12,19,38,0.75)" }}>
-                          {r.rating}/5
-                        </span>
+                        <span style={{ fontWeight: 900, color: "rgba(12,19,38,0.75)" }}>{r.rating}/5</span>
                       </div>
                     </div>
 
-                    <div style={{ marginTop: 10, fontWeight: 650, color: "rgba(12,19,38,0.9)" }}>
-                      {r.text}
-                    </div>
+                    <div style={{ marginTop: 10, fontWeight: 650, color: "rgba(12,19,38,0.9)" }}>{r.text}</div>
 
                     {r.reply ? (
                       <div
@@ -314,9 +309,7 @@ export default function ReviewsSection() {
                         <div style={{ fontWeight: 950, color: "#0b1224" }}>
                           Risposta {r.reply_by || "CL. Thermoservice"}
                         </div>
-                        <div style={{ marginTop: 6, fontWeight: 650, color: "rgba(12,19,38,0.88)" }}>
-                          {r.reply}
-                        </div>
+                        <div style={{ marginTop: 6, fontWeight: 650, color: "rgba(12,19,38,0.88)" }}>{r.reply}</div>
                       </div>
                     ) : null}
                   </div>
@@ -329,14 +322,3 @@ export default function ReviewsSection() {
     </section>
   );
 }
-
-const inputStyle = {
-  width: "100%",
-  padding: "14px 16px",
-  borderRadius: 18,
-  border: "1px solid rgba(15,23,42,0.15)",
-  outline: "none",
-  fontWeight: 800,
-  fontSize: 16,
-  background: "rgba(255,255,255,0.95)",
-};
