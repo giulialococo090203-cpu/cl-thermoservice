@@ -13,20 +13,33 @@ function formatDateTime(iso) {
       minute: "2-digit",
     });
   } catch {
-    return iso;
+    return String(iso);
   }
 }
 
-function openPrintableWindow(title, html) {
-  const w = window.open("", "_blank", "noopener,noreferrer,width=900,height=700");
-  if (!w) return;
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
-  w.document.open();
-  w.document.write(`<!doctype html>
+function openPrintableWindow(title, html) {
+  const w = window.open("", "_blank"); // più compatibile
+  if (!w) {
+    alert("Popup bloccato: abilita i popup per generare il PDF.");
+    return;
+  }
+
+  try {
+    w.document.open();
+    w.document.write(`<!doctype html>
 <html lang="it">
   <head>
     <meta charset="utf-8" />
-    <title>${title}</title>
+    <title>${escapeHtml(title)}</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <style>
       body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; padding: 24px; }
@@ -41,21 +54,25 @@ function openPrintableWindow(title, html) {
   <body>
     ${html}
     <script>
-      setTimeout(() => { window.focus(); window.print(); }, 250);
+      window.addEventListener('load', () => {
+        setTimeout(() => { try { window.focus(); window.print(); } catch(e) {} }, 300);
+      });
     </script>
   </body>
 </html>`);
-  w.document.close();
-}
-
-function isEmailMessage(messaggio) {
-  const m = String(messaggio || "").trim().toUpperCase();
-  return (
-    m.startsWith("[EMAIL DAL SITO]") ||
-    m.startsWith("[MESSAGGIO EMAIL DAL SITO]") ||
-    m.startsWith("[MESSAGGIO EMAIL]") ||
-    m.startsWith("[EMAIL]")
-  );
+    w.document.close();
+  } catch (e) {
+    console.error("Errore PDF:", e);
+    w.document.body.innerHTML = `
+      <div style="font-family:system-ui;padding:24px">
+        <h2>Errore generazione PDF</h2>
+        <p>Apri la console del browser per dettagli.</p>
+        <pre style="white-space:pre-wrap;background:#f6f6f6;padding:12px;border-radius:8px">${escapeHtml(
+          e?.message || e
+        )}</pre>
+      </div>
+    `;
+  }
 }
 
 export default function AdminQuotes() {
@@ -65,8 +82,31 @@ export default function AdminQuotes() {
   const [query, setQuery] = useState("");
   const [selectedQuoteIds, setSelectedQuoteIds] = useState(new Set());
 
-  // ✅ nuovo filtro: all | preventivi | email
-  const [quotesType, setQuotesType] = useState("all");
+  const cardStyle = {
+    background: "rgba(255,255,255,0.85)",
+    borderRadius: 28,
+    border: "1px solid rgba(15,23,42,0.08)",
+    boxShadow: "0 20px 60px rgba(2,6,23,0.10)",
+    backdropFilter: "blur(10px)",
+    padding: 24,
+    marginTop: 16,
+  };
+
+  const btn = (variant = "primary") => {
+    const base = {
+      borderRadius: 16,
+      padding: "12px 16px",
+      fontWeight: 800,
+      border: "1px solid rgba(15,23,42,0.12)",
+      cursor: "pointer",
+    };
+    if (variant === "dark")
+      return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
+    if (variant === "ghost") return { ...base, background: "#fff", color: "#0b1224" };
+    if (variant === "softDanger")
+      return { ...base, background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" };
+    return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
+  };
 
   const loadQuotes = async () => {
     setQuotesError("");
@@ -89,24 +129,19 @@ export default function AdminQuotes() {
 
   useEffect(() => {
     loadQuotes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredQuotes = useMemo(() => {
-    let list = quotes;
-
-    // 1) filtro tipo
-    if (quotesType === "email") list = list.filter((r) => isEmailMessage(r.messaggio));
-    if (quotesType === "preventivi") list = list.filter((r) => !isEmailMessage(r.messaggio));
-
-    // 2) filtro ricerca
     const q = query.trim().toLowerCase();
-    if (!q) return list;
-
-    return list.filter((r) => {
-      const s = `${r.nome || ""} ${r.cognome || ""} ${r.telefono || ""} ${r.email || ""} ${r.messaggio || ""}`.toLowerCase();
+    if (!q) return quotes;
+    return quotes.filter((r) => {
+      const s = `${r.nome || ""} ${r.cognome || ""} ${r.telefono || ""} ${r.email || ""} ${
+        r.messaggio || ""
+      }`.toLowerCase();
       return s.includes(q);
     });
-  }, [quotes, query, quotesType]);
+  }, [quotes, query]);
 
   const toggleQuoteSelection = (id) => {
     setSelectedQuoteIds((prev) => {
@@ -149,14 +184,14 @@ export default function AdminQuotes() {
       : filteredQuotes;
 
     const now = new Date().toLocaleString("it-IT");
+
     const html = `
-      <h1>Storico richieste</h1>
-      <div class="muted">Filtro: ${quotesType.toUpperCase()} — Generato: ${now} — Totale righe: ${rows.length}</div>
+      <h1>Storico richieste preventivo</h1>
+      <div class="muted">Generato: ${escapeHtml(now)} — Totale righe: ${rows.length}</div>
       <table>
         <thead>
           <tr>
             <th>Data/Ora</th>
-            <th>Tipo</th>
             <th>Nome</th>
             <th>Cognome</th>
             <th>Telefono</th>
@@ -168,16 +203,15 @@ export default function AdminQuotes() {
           ${rows
             .map(
               (r) => `
-            <tr>
-              <td>${formatDateTime(r.created_at)}</td>
-              <td>${isEmailMessage(r.messaggio) ? "EMAIL" : "PREVENTIVO"}</td>
-              <td>${(r.nome || "").replaceAll("<", "&lt;")}</td>
-              <td>${(r.cognome || "").replaceAll("<", "&lt;")}</td>
-              <td>${(r.telefono || "").replaceAll("<", "&lt;")}</td>
-              <td>${(r.email || "").replaceAll("<", "&lt;")}</td>
-              <td>${(r.messaggio || "").replaceAll("<", "&lt;")}</td>
-            </tr>
-          `
+                <tr>
+                  <td>${escapeHtml(formatDateTime(r.created_at))}</td>
+                  <td>${escapeHtml(r.nome)}</td>
+                  <td>${escapeHtml(r.cognome)}</td>
+                  <td>${escapeHtml(r.telefono)}</td>
+                  <td>${escapeHtml(r.email)}</td>
+                  <td>${escapeHtml(r.messaggio)}</td>
+                </tr>
+              `
             )
             .join("")}
         </tbody>
@@ -186,44 +220,17 @@ export default function AdminQuotes() {
         Nella finestra di stampa seleziona “Salva come PDF”.
       </div>
     `;
+
     openPrintableWindow(
       onlySelected ? "PDF richieste (selezionate)" : "PDF richieste (tutte)",
       html
     );
   };
 
-  const cardStyle = {
-    background: "rgba(255,255,255,0.85)",
-    borderRadius: 28,
-    border: "1px solid rgba(15,23,42,0.08)",
-    boxShadow: "0 20px 60px rgba(2,6,23,0.10)",
-    backdropFilter: "blur(10px)",
-  };
-
-  const btn = (variant = "primary") => {
-    const base = {
-      borderRadius: 16,
-      padding: "12px 16px",
-      fontWeight: 800,
-      border: "1px solid rgba(15,23,42,0.12)",
-      cursor: "pointer",
-    };
-    if (variant === "dark")
-      return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
-    if (variant === "ghost") return { ...base, background: "#fff", color: "#0b1224" };
-    if (variant === "softDanger")
-      return { ...base, background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" };
-    return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
-  };
-
   return (
-    <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
+    <div style={cardStyle}>
       <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
-        Storico richieste (Preventivi + Email)
-      </div>
-
-      <div style={{ marginTop: 8, color: "#475569", fontWeight: 700 }}>
-        Il filtro “Messaggi Email” mostra quelli salvati dal tasto Email del sito.
+        Storico richieste preventivo
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 14, alignItems: "center" }}>
@@ -240,24 +247,15 @@ export default function AdminQuotes() {
             flex: "1 1 260px",
           }}
         />
-
-        {/* ✅ filtro tipo */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button type="button" onClick={() => setQuotesType("all")} style={{ ...btn(quotesType === "all" ? "dark" : "ghost"), padding: "10px 12px" }}>
-            Tutte
-          </button>
-          <button type="button" onClick={() => setQuotesType("preventivi")} style={{ ...btn(quotesType === "preventivi" ? "dark" : "ghost"), padding: "10px 12px" }}>
-            Preventivi
-          </button>
-          <button type="button" onClick={() => setQuotesType("email")} style={{ ...btn(quotesType === "email" ? "dark" : "ghost"), padding: "10px 12px" }}>
-            Messaggi Email
-          </button>
-        </div>
-
-        <button style={btn("ghost")} onClick={selectAllVisibleQuotes}>Seleziona tutti</button>
-        <button style={btn("ghost")} onClick={deselectAllQuotes}>Deseleziona</button>
-
-        <button style={btn("dark")} onClick={() => exportQuotesToPDF(false)}>PDF Tutte</button>
+        <button style={btn("ghost")} onClick={selectAllVisibleQuotes}>
+          Seleziona tutti
+        </button>
+        <button style={btn("ghost")} onClick={deselectAllQuotes}>
+          Deseleziona
+        </button>
+        <button style={btn("dark")} onClick={() => exportQuotesToPDF(false)}>
+          PDF Tutte
+        </button>
         <button
           style={{
             ...btn("dark"),
@@ -268,9 +266,9 @@ export default function AdminQuotes() {
         >
           PDF Selez.
         </button>
-
-        <button style={btn("ghost")} onClick={loadQuotes}>Aggiorna</button>
-
+        <button style={btn("ghost")} onClick={loadQuotes}>
+          Aggiorna
+        </button>
         <button
           style={{
             ...btn("softDanger"),
@@ -281,8 +279,9 @@ export default function AdminQuotes() {
         >
           Elimina selez.
         </button>
-
-        <button style={btn("softDanger")} onClick={clearQuotesDB}>Pulisci DB</button>
+        <button style={btn("softDanger")} onClick={clearQuotesDB}>
+          Pulisci DB
+        </button>
       </div>
 
       {quotesError && (
@@ -327,7 +326,6 @@ export default function AdminQuotes() {
         ) : (
           filteredQuotes.map((q) => {
             const checked = selectedQuoteIds.has(q.id);
-            const tipo = isEmailMessage(q.messaggio) ? "EMAIL" : "PREVENTIVO";
             return (
               <div
                 key={q.id}
@@ -344,29 +342,15 @@ export default function AdminQuotes() {
                   <input type="checkbox" checked={checked} onChange={() => toggleQuoteSelection(q.id)} />
                 </div>
 
-                <div style={{ fontWeight: 900 }}>
-                  {formatDateTime(q.created_at)}
-                  <div style={{
-                    marginTop: 6,
-                    display: "inline-block",
-                    padding: "4px 10px",
-                    borderRadius: 999,
-                    fontSize: 12,
-                    fontWeight: 950,
-                    background: tipo === "EMAIL" ? "#e0f2fe" : "#dcfce7",
-                    border: "1px solid rgba(15,23,42,0.10)"
-                  }}>
-                    {tipo}
-                  </div>
-                </div>
+                <div style={{ fontWeight: 900 }}>{formatDateTime(q.created_at)}</div>
 
                 <div>
                   <div style={{ fontWeight: 950, fontSize: 18, color: "#0b1224", lineHeight: 1.1 }}>
-                    {(q.nome || "").toString()} {(q.cognome || "").toString()}
+                    {String(q.nome ?? "")} {String(q.cognome ?? "")}
                   </div>
                   {q.messaggio && (
-                    <div style={{ marginTop: 10, color: "#334155", fontWeight: 700, whiteSpace: "pre-wrap" }}>
-                      {q.messaggio}
+                    <div style={{ marginTop: 10, color: "#334155", fontWeight: 700 }}>
+                      {String(q.messaggio)}
                     </div>
                   )}
                 </div>

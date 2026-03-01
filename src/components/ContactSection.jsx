@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Reveal from "./Reveal";
-import { PhoneCall, Mail, MapPin, Clock, Navigation, X, MessageCircle } from "lucide-react";
+import { PhoneCall, Mail, MapPin, Clock, Navigation, X } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
 export default function ContactSection() {
@@ -9,17 +9,10 @@ export default function ContactSection() {
       label: "Via Tommaso Calojra, 36 — Palermo (PA)",
       q: "Via Tommaso Calojra 36 Palermo",
       lat: 38.1253,
-      lng: 13.3610,
+      lng: 13.361,
     }),
     []
   );
-
-  // ✅ WHATSAPP
-  const WHATSAPP_NUMBER = "393662085556"; // +39 366 208 5556
-  const whatsappLink = useMemo(() => {
-    const text = "Ciao, vorrei informazioni sui vostri servizi.";
-    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
-  }, []);
 
   const [pos, setPos] = useState(null);
   const [geoStatus, setGeoStatus] = useState("idle");
@@ -63,17 +56,6 @@ export default function ContactSection() {
   const mapsPlaceUrl = useMemo(() => {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(DEST.q)}`;
   }, [DEST]);
-
-  const geoText =
-    geoStatus === "loading"
-      ? "Sto rilevando la tua posizione…"
-      : geoStatus === "ok"
-      ? "Posizione rilevata: indicazioni personalizzate attive ✅"
-      : geoStatus === "denied"
-      ? "Posizione non autorizzata: userò indicazioni standard."
-      : geoStatus === "error"
-      ? "Posizione non disponibile: userò indicazioni standard."
-      : "";
 
   const resetEmailForm = () => {
     setNome("");
@@ -161,39 +143,13 @@ export default function ContactSection() {
         <div className="grid2" style={{ marginTop: 26 }}>
           {/* TELEFONO */}
           <Reveal>
-            <a
-              className="card serviceCard cardHover"
-              href="tel:091406911"
-              style={{ textDecoration: "none", color: "inherit" }}
-            >
+            <a className="card serviceCard cardHover" href="tel:091406911" style={{ textDecoration: "none", color: "inherit" }}>
               <div className="iconBox">
                 <PhoneCall size={22} />
               </div>
               <div>
                 <div className="serviceTitle">Telefono</div>
-                <div style={{ fontWeight: 1000, fontSize: 24 }}>091 406911</div>
-              </div>
-            </a>
-          </Reveal>
-
-          {/* WHATSAPP */}
-          <Reveal>
-            <a
-              className="card serviceCard cardHover"
-              href={whatsappLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ textDecoration: "none", color: "inherit" }}
-            >
-              <div className="iconBox">
-                <MessageCircle size={22} />
-              </div>
-              <div>
-                <div className="serviceTitle">WhatsApp</div>
-                <div style={{ fontWeight: 1000, fontSize: 20 }}>366 208 5556</div>
-                <div style={{ marginTop: 4, fontWeight: 800, opacity: 0.75, fontSize: 14 }}>
-                  Clicca per scrivere su WhatsApp →
-                </div>
+                <div style={{ fontWeight: 950, fontSize: 24 }}>091 406911</div>
               </div>
             </a>
           </Reveal>
@@ -205,12 +161,11 @@ export default function ContactSection() {
               className="card serviceCard cardHover"
               onClick={() => setOpenEmailModal(true)}
               style={{
-                textDecoration: "none",
-                color: "inherit",
                 width: "100%",
                 textAlign: "left",
                 cursor: "pointer",
                 background: "transparent",
+                color: "inherit",
               }}
             >
               <div className="iconBox">
@@ -218,8 +173,8 @@ export default function ContactSection() {
               </div>
               <div>
                 <div className="serviceTitle">Email</div>
-                <div style={{ fontWeight: 1000, fontSize: 20 }}>clthermoservice@virgilio.it</div>
-                <div style={{ marginTop: 4, fontWeight: 800, opacity: 0.75, fontSize: 14 }}>
+                <div style={{ fontWeight: 950, fontSize: 20 }}>clthermoservice@virgilio.it</div>
+                <div style={{ marginTop: 4, fontWeight: 700, opacity: 0.7, fontSize: 14 }}>
                   Clicca per scrivere (salvata in Admin + apre Mail)
                 </div>
               </div>
@@ -240,7 +195,7 @@ export default function ContactSection() {
               </div>
               <div>
                 <div className="serviceTitle">Indirizzo</div>
-                <div style={{ fontWeight: 950, fontSize: 20 }}>{DEST.label}</div>
+                <div style={{ fontWeight: 900, fontSize: 20 }}>{DEST.label}</div>
                 <div style={{ fontSize: 14, opacity: 0.7, marginTop: 4, fontWeight: 700 }}>
                   Clicca per aprire su Maps →
                 </div>
@@ -256,37 +211,37 @@ export default function ContactSection() {
               </div>
               <div>
                 <div className="serviceTitle">Orari</div>
-                <div style={{ fontWeight: 950, fontSize: 20 }}>
-                  Lun–Ven 8:00–18:00 | Sab 8:00–13:00
-                </div>
+                <div style={{ fontWeight: 900, fontSize: 20 }}>Lun–Ven 8:00–18:00 | Sab 8:00–13:00</div>
               </div>
             </div>
           </Reveal>
         </div>
 
-        {/* CTA */}
+        {/* CTA Premium (pulite, coerenti, niente emoji, niente status geolocalizzazione) */}
         <Reveal>
           <div
             style={{
-              marginTop: 22,
+              marginTop: 36,
+              paddingTop: 24,
+              borderTop: "1px solid rgba(15,23,42,.08)",
               display: "flex",
-              justifyContent: "center",
-              gap: 12,
+              gap: 14,
               flexWrap: "wrap",
-              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             <a
-              className="btnAnim"
               href={mapsDirectionsUrl}
               target="_blank"
               rel="noopener noreferrer"
+              className="btnAnim"
               style={{
-                padding: "14px 18px",
-                borderRadius: 16,
-                background: "#0b1220",
-                color: "white",
-                fontWeight: 950,
+                padding: "14px 22px",
+                borderRadius: 18,
+                border: "1px solid rgba(15,23,42,.12)",
+                background: "white",
+                color: "#0b1220",
+                fontWeight: 800,
                 textDecoration: "none",
                 display: "inline-flex",
                 alignItems: "center",
@@ -298,47 +253,42 @@ export default function ContactSection() {
             </a>
 
             <a
-              className="btnAnim"
               href="tel:091406911"
-              style={{
-                padding: "14px 18px",
-                borderRadius: 16,
-                background: "#e53935",
-                color: "white",
-                fontWeight: 950,
-                textDecoration: "none",
-              }}
-            >
-              📞 Chiama Adesso
-            </a>
-
-            <a
               className="btnAnim"
-              href={whatsappLink}
-              target="_blank"
-              rel="noopener noreferrer"
               style={{
-                padding: "14px 18px",
-                borderRadius: 16,
-                background: "#25D366",
+                padding: "14px 22px",
+                borderRadius: 18,
+                background: "#0b1220",
                 color: "white",
-                fontWeight: 950,
+                fontWeight: 900,
                 textDecoration: "none",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 10,
               }}
             >
-              <MessageCircle size={18} />
+              <PhoneCall size={18} />
+              Chiama
+            </a>
+
+            <a
+              href="https://wa.me/393662085556"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btnAnim"
+              style={{
+                padding: "14px 22px",
+                borderRadius: 18,
+                border: "1px solid rgba(15,23,42,.12)",
+                background: "rgba(255,255,255,.85)",
+                color: "#0b1220",
+                fontWeight: 800,
+                textDecoration: "none",
+              }}
+            >
               WhatsApp
             </a>
           </div>
-
-          {geoText && (
-            <div style={{ marginTop: 10, textAlign: "center", fontWeight: 800, opacity: 0.75 }}>
-              {geoText}
-            </div>
-          )}
         </Reveal>
       </div>
 
@@ -378,7 +328,7 @@ export default function ContactSection() {
                 alignItems: "center",
               }}
             >
-              <div style={{ fontWeight: 1000, fontSize: 18 }}>Scrivi un messaggio</div>
+              <div style={{ fontWeight: 950, fontSize: 18 }}>Scrivi un messaggio</div>
               <button
                 onClick={() => setOpenEmailModal(false)}
                 style={{
@@ -401,27 +351,12 @@ export default function ContactSection() {
             <form onSubmit={submitEmailAndSave} style={{ padding: 16, display: "grid", gap: 12 }}>
               <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
                 <input placeholder="Nome *" value={nome} onChange={(e) => setNome(e.target.value)} style={inputStyle} />
-                <input
-                  placeholder="Cognome"
-                  value={cognome}
-                  onChange={(e) => setCognome(e.target.value)}
-                  style={inputStyle}
-                />
+                <input placeholder="Cognome" value={cognome} onChange={(e) => setCognome(e.target.value)} style={inputStyle} />
               </div>
 
               <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
-                <input
-                  placeholder="Telefono *"
-                  value={telefono}
-                  onChange={(e) => setTelefono(e.target.value)}
-                  style={inputStyle}
-                />
-                <input
-                  placeholder="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  style={inputStyle}
-                />
+                <input placeholder="Telefono *" value={telefono} onChange={(e) => setTelefono(e.target.value)} style={inputStyle} />
+                <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} />
               </div>
 
               <textarea
@@ -429,7 +364,7 @@ export default function ContactSection() {
                 value={messaggio}
                 onChange={(e) => setMessaggio(e.target.value)}
                 rows={6}
-                style={{ ...inputStyle, fontWeight: 750, resize: "vertical" }}
+                style={{ ...inputStyle, fontWeight: 700, resize: "vertical" }}
               />
 
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
