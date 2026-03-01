@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Menu, X, PhoneCall, Shield } from "lucide-react";
+import { Menu, X, PhoneCall } from "lucide-react";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -12,7 +12,6 @@ export default function Navbar() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // blocca scroll pagina quando menu mobile è aperto
   useEffect(() => {
     const prev = document.body.style.overflow;
     if (open) document.body.style.overflow = "hidden";
@@ -26,7 +25,6 @@ export default function Navbar() {
   return (
     <>
       <header
-        className="navAnim"
         style={{
           background: "rgba(255,255,255,0.92)",
           backdropFilter: "blur(10px)",
@@ -77,22 +75,34 @@ export default function Navbar() {
         {/* MENU DESKTOP */}
         <nav className="navLinks" style={{ display: "flex", gap: 22, alignItems: "center" }}>
           <a href="#servizi">Servizi</a>
-          <a href="#zona">Zona</a>
+          <a href="#zona">Zona copertura</a>
           <a href="#marchi">Marchi</a>
           <a href="#certificazioni">Certificazioni</a>
           <a href="#lavori">Lavori</a>
-          <a href="#recensioni">Recensioni</a>
+
+          {/* Bottone evidenziato recensioni */}
+          <a
+            href="#recensioni"
+            style={{
+              padding: "10px 16px",
+              borderRadius: 14,
+              background: "#e53935",
+              color: "white",
+              fontWeight: 900,
+              textDecoration: "none",
+              boxShadow: "0 12px 26px rgba(229,57,53,0.25)",
+            }}
+          >
+            ⭐ Lascia una recensione
+          </a>
+
           <a href="#preventivo">Preventivo</a>
           <a href="#contatti">Contatti</a>
-          <a href="#admin" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <Shield size={16} /> Admin
-          </a>
         </nav>
 
         {/* CTA + Mobile button */}
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <a
-            className="btnAnim"
             href="tel:091406911"
             style={{
               padding: "10px 14px",
@@ -104,6 +114,7 @@ export default function Navbar() {
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
+              boxShadow: "0 12px 26px rgba(229,57,53,0.22)",
             }}
           >
             <PhoneCall size={18} /> Chiama
@@ -128,7 +139,6 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Responsive: nascondi desktop menu su mobile */}
         <style>{`
           @media(max-width: 980px){
             .navLinks{ display:none !important; }
@@ -155,14 +165,14 @@ export default function Navbar() {
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "min(360px, 92vw)",
-              height: "100dvh",            // ✅ altezza reale su mobile
+              height: "100dvh",
               maxHeight: "100dvh",
               background: "rgba(255,255,255,.94)",
               borderLeft: "1px solid rgba(15,23,42,.10)",
               padding: 18,
               display: "flex",
               flexDirection: "column",
-              overflow: "hidden",          // ✅ il contenuto interno gestisce lo scroll
+              overflow: "hidden",
             }}
           >
             {/* top */}
@@ -198,14 +208,14 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* ✅ area scrollabile */}
+            {/* area scrollabile */}
             <div
               style={{
                 marginTop: 14,
                 display: "flex",
                 flexDirection: "column",
                 gap: 10,
-                overflowY: "auto",          // ✅ SCROLL
+                overflowY: "auto",
                 paddingRight: 4,
                 flex: "1 1 auto",
               }}
@@ -216,10 +226,9 @@ export default function Navbar() {
                 ["#marchi", "Marchi"],
                 ["#certificazioni", "Certificazioni"],
                 ["#lavori", "Lavori"],
-                ["#recensioni", "Recensioni"],
+                ["#recensioni", "⭐ Lascia una recensione"],
                 ["#preventivo", "Preventivo"],
                 ["#contatti", "Contatti"],
-                ["#admin", "Admin"],
               ].map(([href, label]) => (
                 <a
                   key={href}
@@ -240,7 +249,6 @@ export default function Navbar() {
                 </a>
               ))}
 
-              {/* CTA (restano dentro lo scroll per finestre piccole) */}
               <div style={{ display: "grid", gap: 10, marginTop: 6 }}>
                 <a
                   href="tel:091406911"
