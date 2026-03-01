@@ -1,270 +1,196 @@
 import { useEffect, useMemo, useState } from "react";
+import { Star, Send } from "lucide-react";
 import { supabase } from "../supabaseClient";
+import Reveal from "./Reveal";
 
-function Stars({ value, onChange, size = 22 }) {
+// Expected Supabase table: public.reviews
+// Columns: id, created_at, name, rating, message (NOT NULL)
+// Optional: reply_text, replied_at
+
+function Stars({ value, onChange, size = 18, readOnly = false }) {
+  const stars = [1, 2, 3, 4, 5];
   return (
-    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <button
-          key={n}
-          type="button"
-          onClick={() => onChange?.(n)}
-          aria-label={`Valutazione ${n} stelle`}
-          style={{
-            width: size,
-            height: size,
-            border: 0,
-            background: "transparent",
-            cursor: onChange ? "pointer" : "default",
-            padding: 0,
-            lineHeight: 1,
-            fontSize: size,
-            opacity: value >= n ? 1 : 0.25,
-            transform: value >= n ? "translateY(-1px)" : "none",
-          }}
-        >
-          ★
-        </button>
-      ))}
+    <div style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+      {stars.map((s) => {
+        const filled = s <= value;
+        return (
+          <button
+            key={s}
+            type="button"
+            onClick={() => !readOnly && onChange?.(s)}
+            aria-label={`Voto ${s} su 5`}
+            style={{
+              border: "none",
+              background: "transparent",
+              padding: 0,
+              cursor: readOnly ? "default" : "pointer",
+              opacity: filled ? 1 : 0.35,
+            }}
+          >
+            <Star size={size} fill={filled ? "currentColor" : "none"} />
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-const inputStyle = {
-  width: "100%",
-  padding: "14px 16px",
-  borderRadius: 18,
-  border: "1px solid rgba(15,23,42,0.15)",
-  outline: "none",
-  fontWeight: 800,
-  fontSize: 16,
-  background: "rgba(255,255,255,0.95)",
-};
-
 export default function ReviewsSection() {
-  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadErr, setLoadErr] = useState("");
+  const [sending, setSending] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [okMsg, setOkMsg] = useState("");
 
-  // form clienti
+  const [reviews, setReviews] = useState([]);
+
+  // form
   const [name, setName] = useState("");
   const [rating, setRating] = useState(5);
-  const [text, setText] = useState("");
-  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState("");
 
   const avg = useMemo(() => {
-    if (!reviews.length) return 0;
-    const sum = reviews.reduce((a, r) => a + (r.rating || 0), 0);
+    if (!reviews?.length) return null;
+    const sum = reviews.reduce((acc, r) => acc + (Number(r.rating) || 0), 0);
     return Math.round((sum / reviews.length) * 10) / 10;
   }, [reviews]);
 
-  async function loadReviews() {
+  const load = async () => {
     setLoading(true);
-    setLoadErr("");
+    setErrorMsg("");
     try {
       const { data, error } = await supabase
         .from("reviews")
-        .select("id, created_at, name, rating, text, reply, reply_by, reply_at")
-        .order("created_at", { ascending: false })
-        .limit(30);
+        .select("id, created_at, name, rating, message, reply_text, replied_at")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setReviews(data || []);
+      setReviews(Array.isArray(data) ? data : []);
     } catch (e) {
-      setLoadErr(e?.message || "Errore nel caricamento recensioni");
+      console.error(e);
+      setErrorMsg(e?.message || "Errore caricamento recensioni");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    loadReviews();
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    if (!name.trim()) return alert("Inserisci il nome.");
-    if (!text.trim()) return alert("Scrivi la recensione.");
-    if (rating < 1 || rating > 5) return alert("Scegli una valutazione da 1 a 5.");
+    setOkMsg("");
+    setErrorMsg("");
+
+    const safeName = name.trim();
+    const safeMsg = message.trim();
+
+    if (!safeName) return setErrorMsg("Inserisci il nome.");
+    if (!safeMsg) return setErrorMsg("Scrivi un messaggio nella recensione.");
 
     setSending(true);
     try {
       const payload = {
-        name: name.trim(),
-        rating,
-        text: text.trim(),
+        name: safeName,
+        rating: Number(rating) || 5,
+        message: safeMsg, // <-- IMPORTANT: la tua tabella richiede message NOT NULL
       };
 
       const { error } = await supabase.from("reviews").insert([payload]);
       if (error) throw error;
 
+      setOkMsg("Recensione inviata! Grazie 😊");
       setName("");
       setRating(5);
-      setText("");
-      await loadReviews();
-
-      alert("Recensione inviata! Grazie 🙏");
-    } catch (e2) {
-      console.error(e2);
-      alert("Errore invio recensione: " + (e2?.message || "riprova"));
+      setMessage("");
+      await load();
+    } catch (e) {
+      console.error(e);
+      setErrorMsg(`Errore invio recensione: ${e?.message || ""}`.trim());
     } finally {
       setSending(false);
     }
   };
 
   return (
-    <section id="recensioni" style={{ padding: "72px 16px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div
-          style={{
-            display: "flex",
-            gap: 18,
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <h2 style={{ margin: 0, fontSize: 40, letterSpacing: -0.5 }}>Recensioni</h2>
-            <p style={{ margin: "10px 0 0", color: "rgba(12,19,38,0.75)", fontWeight: 650 }}>
-              La soddisfazione dei clienti è la nostra priorità.
-            </p>
-          </div>
-
+    <section id="recensioni" style={{ padding: "70px 0" }}>
+      <div style={{ width: "min(1120px, 92vw)", margin: "0 auto" }}>
+        <Reveal>
           <div
             style={{
-              padding: "10px 14px",
-              borderRadius: 999,
-              background: "rgba(99,102,241,0.10)",
-              border: "1px solid rgba(99,102,241,0.18)",
-              fontWeight: 850,
-              color: "rgba(12,19,38,0.9)",
               display: "flex",
-              alignItems: "center",
-              gap: 10,
+              alignItems: "flex-end",
+              justifyContent: "space-between",
+              gap: 16,
+              flexWrap: "wrap",
             }}
           >
-            <span style={{ fontVariantNumeric: "tabular-nums" }}>{avg ? `${avg}/5` : "—/5"}</span>
-            <Stars value={Math.round(avg)} size={18} />
-            <span style={{ opacity: 0.7 }}>({reviews.length})</span>
-          </div>
-        </div>
-
-        <div style={{ marginTop: 22, display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
-          {/* ✅ FORM (target del link Navbar) */}
-          <div
-            id="lascia-recensione"
-            style={{
-              background: "rgba(255,255,255,0.9)",
-              border: "1px solid rgba(15,23,42,0.10)",
-              borderRadius: 22,
-              padding: 18,
-              boxShadow: "0 18px 50px rgba(2,6,23,0.06)",
-              scrollMarginTop: 90, // evita che la navbar sticky copra l'inizio
-            }}
-          >
-            <div style={{ fontWeight: 950, fontSize: 20, marginBottom: 10 }}>Lascia una recensione</div>
-
-            <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 240px", gap: 12 }}>
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Nome e Cognome"
-                  style={inputStyle}
-                />
-
-                <div
-                  style={{
-                    ...inputStyle,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 12,
-                  }}
-                >
-                  <span style={{ fontWeight: 850, opacity: 0.85 }}>Valutazione</span>
-                  <Stars value={rating} onChange={setRating} />
-                </div>
+            <div>
+              <div
+                style={{
+                  fontWeight: 1000,
+                  fontSize: 42,
+                  letterSpacing: "-0.03em",
+                  color: "#0b1220",
+                }}
+              >
+                Recensioni
               </div>
-
-              <textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Scrivi la tua esperienza (es. puntualità, intervento, pulizia, ecc.)"
-                rows={4}
-                style={{ ...inputStyle, resize: "vertical" }}
-              />
-
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <button
-                  type="submit"
-                  disabled={sending}
-                  style={{
-                    padding: "14px 16px",
-                    borderRadius: 18,
-                    border: 0,
-                    background: "#0b1224",
-                    color: "white",
-                    fontWeight: 900,
-                    cursor: sending ? "not-allowed" : "pointer",
-                    opacity: sending ? 0.75 : 1,
-                  }}
-                >
-                  {sending ? "Invio..." : "Invia recensione"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={loadReviews}
-                  style={{
-                    padding: "14px 16px",
-                    borderRadius: 18,
-                    border: "1px solid rgba(15,23,42,0.16)",
-                    background: "white",
-                    fontWeight: 900,
-                    cursor: "pointer",
-                  }}
-                >
-                  Aggiorna
-                </button>
+              <div style={{ marginTop: 8, color: "rgba(15,23,42,.72)", fontWeight: 700 }}>
+                Cosa dicono i clienti
               </div>
-            </form>
-          </div>
+            </div>
 
+            <div
+              style={{
+                padding: "12px 14px",
+                borderRadius: 18,
+                border: "1px solid rgba(15,23,42,.10)",
+                background: "rgba(255,255,255,.9)",
+                boxShadow: "0 10px 26px rgba(15,23,42,.06)",
+                minWidth: 220,
+              }}
+            >
+              <div style={{ fontWeight: 950, color: "#0b1220" }}>Media voti</div>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 6 }}>
+                <Stars value={Math.round(avg || 0)} readOnly size={18} />
+                <div style={{ fontWeight: 1000 }}>{avg ?? "-"}</div>
+                <div style={{ opacity: 0.65, fontWeight: 800 }}>({reviews.length})</div>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1.05fr .95fr", gap: 18, marginTop: 22 }}>
           {/* LISTA */}
           <div
             style={{
-              background: "rgba(255,255,255,0.9)",
-              border: "1px solid rgba(15,23,42,0.10)",
-              borderRadius: 22,
+              borderRadius: 26,
+              border: "1px solid rgba(15,23,42,.10)",
+              background: "rgba(255,255,255,.92)",
+              boxShadow: "0 18px 50px rgba(15,23,42,.08)",
               padding: 18,
-              boxShadow: "0 18px 50px rgba(2,6,23,0.06)",
+              overflow: "hidden",
             }}
           >
-            <div style={{ fontWeight: 950, fontSize: 20, marginBottom: 10 }}>Cosa dicono i clienti</div>
-
-            {loadErr ? (
+            {loading ? (
+              <div style={{ padding: 14, fontWeight: 800, opacity: 0.7 }}>Caricamento…</div>
+            ) : errorMsg ? (
               <div
                 style={{
                   padding: 14,
-                  borderRadius: 16,
-                  background: "rgba(220,38,38,0.08)",
-                  border: "1px solid rgba(220,38,38,0.18)",
-                  color: "rgba(140,0,0,0.95)",
-                  fontWeight: 900,
+                  borderRadius: 18,
+                  border: "1px solid rgba(239,68,68,.35)",
+                  background: "rgba(239,68,68,.08)",
+                  fontWeight: 850,
+                  color: "#991b1b",
                 }}
               >
-                {loadErr}
-              </div>
-            ) : null}
-
-            {loading ? (
-              <div style={{ padding: 10, fontWeight: 800, color: "rgba(12,19,38,0.75)" }}>
-                Caricamento recensioni…
+                {errorMsg}
               </div>
             ) : reviews.length === 0 ? (
-              <div style={{ padding: 10, fontWeight: 800, color: "rgba(12,19,38,0.75)" }}>
+              <div style={{ padding: 14, fontWeight: 900, opacity: 0.7 }}>
                 Nessuna recensione ancora. Sii il primo 🙂
               </div>
             ) : (
@@ -273,43 +199,46 @@ export default function ReviewsSection() {
                   <div
                     key={r.id}
                     style={{
-                      borderRadius: 18,
-                      border: "1px solid rgba(15,23,42,0.10)",
+                      borderRadius: 20,
+                      border: "1px solid rgba(15,23,42,.08)",
+                      background: "rgba(255,255,255,.95)",
                       padding: 14,
-                      background: "white",
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                      <div>
-                        <div style={{ fontWeight: 950, fontSize: 18, color: "#0b1224" }}>{r.name}</div>
-                        <div style={{ marginTop: 6, color: "rgba(12,19,38,0.6)", fontWeight: 700, fontSize: 13 }}>
-                          {new Date(r.created_at).toLocaleDateString("it-IT")}
-                        </div>
-                      </div>
-
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                      <div style={{ fontWeight: 1000, color: "#0b1220" }}>{r.name || "Cliente"}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <Stars value={r.rating} size={18} />
-                        <span style={{ fontWeight: 900, color: "rgba(12,19,38,0.75)" }}>{r.rating}/5</span>
+                        <Stars value={Number(r.rating) || 0} readOnly size={16} />
+                        <div style={{ fontWeight: 900, opacity: 0.75 }}>
+                          {new Date(r.created_at).toLocaleString("it-IT", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
                       </div>
                     </div>
 
-                    <div style={{ marginTop: 10, fontWeight: 650, color: "rgba(12,19,38,0.9)" }}>{r.text}</div>
+                    <div style={{ marginTop: 8, fontWeight: 750, color: "rgba(15,23,42,.80)", lineHeight: 1.45 }}>
+                      {r.message}
+                    </div>
 
-                    {r.reply ? (
+                    {r.reply_text ? (
                       <div
                         style={{
-                          marginTop: 12,
-                          borderLeft: "4px solid rgba(99,102,241,0.55)",
-                          paddingLeft: 12,
-                          background: "rgba(99,102,241,0.06)",
-                          borderRadius: 14,
+                          marginTop: 10,
                           padding: 12,
+                          borderRadius: 16,
+                          background: "rgba(15,23,42,.05)",
+                          border: "1px solid rgba(15,23,42,.08)",
                         }}
                       >
-                        <div style={{ fontWeight: 950, color: "#0b1224" }}>
-                          Risposta {r.reply_by || "CL. Thermoservice"}
+                        <div style={{ fontWeight: 1000, marginBottom: 6 }}>
+                          Risposta di <span style={{ color: "#e53935" }}>CL. Thermoservice</span>
                         </div>
-                        <div style={{ marginTop: 6, fontWeight: 650, color: "rgba(12,19,38,0.88)" }}>{r.reply}</div>
+                        <div style={{ fontWeight: 800, opacity: 0.85, lineHeight: 1.45 }}>{r.reply_text}</div>
                       </div>
                     ) : null}
                   </div>
@@ -317,7 +246,125 @@ export default function ReviewsSection() {
               </div>
             )}
           </div>
+
+          {/* FORM */}
+          <div
+            style={{
+              borderRadius: 26,
+              border: "1px solid rgba(15,23,42,.10)",
+              background: "rgba(255,255,255,.92)",
+              boxShadow: "0 18px 50px rgba(15,23,42,.08)",
+              padding: 18,
+            }}
+          >
+            <div style={{ fontWeight: 1000, fontSize: 26, letterSpacing: "-0.02em" }}>Lascia una recensione</div>
+            <div style={{ marginTop: 6, opacity: 0.7, fontWeight: 750 }}>
+              Aiuta altri clienti a scegliere un servizio affidabile.
+            </div>
+
+            <form onSubmit={submit} style={{ marginTop: 14, display: "grid", gap: 12 }}>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Il tuo nome"
+                style={{
+                  padding: "14px 14px",
+                  borderRadius: 18,
+                  border: "1px solid rgba(15,23,42,.12)",
+                  fontWeight: 850,
+                  outline: "none",
+                }}
+              />
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: "12px 14px",
+                  borderRadius: 18,
+                  border: "1px solid rgba(15,23,42,.12)",
+                }}
+              >
+                <div style={{ fontWeight: 950, opacity: 0.9 }}>Valutazione</div>
+                <Stars value={rating} onChange={setRating} />
+              </div>
+
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Scrivi la tua esperienza…"
+                rows={5}
+                style={{
+                  padding: "14px 14px",
+                  borderRadius: 18,
+                  border: "1px solid rgba(15,23,42,.12)",
+                  fontWeight: 800,
+                  outline: "none",
+                  resize: "vertical",
+                }}
+              />
+
+              {errorMsg ? (
+                <div
+                  style={{
+                    padding: 12,
+                    borderRadius: 18,
+                    border: "1px solid rgba(239,68,68,.35)",
+                    background: "rgba(239,68,68,.08)",
+                    fontWeight: 850,
+                    color: "#991b1b",
+                  }}
+                >
+                  {errorMsg}
+                </div>
+              ) : null}
+
+              {okMsg ? (
+                <div
+                  style={{
+                    padding: 12,
+                    borderRadius: 18,
+                    border: "1px solid rgba(34,197,94,.35)",
+                    background: "rgba(34,197,94,.10)",
+                    fontWeight: 850,
+                    color: "#065f46",
+                  }}
+                >
+                  {okMsg}
+                </div>
+              ) : null}
+
+              <button
+                className="btnAnim"
+                type="submit"
+                disabled={sending}
+                style={{
+                  padding: "14px 16px",
+                  borderRadius: 18,
+                  border: "1px solid rgba(15,23,42,.10)",
+                  background: "#0b1220",
+                  color: "white",
+                  fontWeight: 1000,
+                  cursor: sending ? "not-allowed" : "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                }}
+              >
+                <Send size={18} /> {sending ? "Invio…" : "Invia recensione"}
+              </button>
+            </form>
+          </div>
         </div>
+
+        <style>{`
+          @media (max-width: 980px){
+            #recensioni > div > div{ grid-template-columns: 1fr !important; }
+          }
+        `}</style>
       </div>
     </section>
   );
