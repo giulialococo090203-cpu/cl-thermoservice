@@ -6,17 +6,16 @@ export default function Footer() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 14,
+            gap: 16,
           }}
         >
           <img
-            src="/logo.png"
+            src="/favicon.png"
             alt="Thermoservice"
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: 14,
-              boxShadow: "0 10px 24px rgba(0,0,0,0.18)",
+              width: 54,
+              height: 54,
+              objectFit: "contain",
             }}
           />
 
@@ -25,13 +24,21 @@ export default function Footer() {
               fontSize: 30,
               fontWeight: 900,
               letterSpacing: "-0.02em",
+              color: "white",
             }}
           >
             Thermoservice
           </div>
         </div>
 
-        <div className="footerCopy">
+        <div
+          style={{
+            marginTop: 14,
+            opacity: 0.75,
+            fontWeight: 700,
+            color: "white",
+          }}
+        >
           © {new Date().getFullYear()} Thermoservice. Tutti i diritti riservati.
         </div>
       </div>
