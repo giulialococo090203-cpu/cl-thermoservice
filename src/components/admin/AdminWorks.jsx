@@ -34,10 +34,10 @@ export default function AdminWorks() {
 
   const makeFileName = (originalName) => {
     const safe = (originalName || "file").replace(/\s+/g, "-");
-    const ext = safe.includes(".") ? safe.split(".").pop() : "jpg";
+    const ext = safe.includes(".") ? safe.split(".").pop() : "bin";
     const base = safe.replace(/\.[^/.]+$/, "");
     const uid =
-      (typeof crypto !== "undefined" && crypto.randomUUID)
+      typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
         : String(Date.now());
     return `${Date.now()}-${uid}-${base}.${ext}`.toLowerCase();
@@ -47,34 +47,44 @@ export default function AdminWorks() {
     e.preventDefault();
     setErr("");
 
-    if (!file) return setErr("Seleziona una foto.");
+    if (!file) return setErr("Seleziona una foto o un video.");
     if (!title.trim()) return setErr("Inserisci un titolo.");
     if (!description.trim()) return setErr("Inserisci una descrizione.");
 
     setLoading(true);
     try {
       const storagePath = makeFileName(file.name);
+      const isVideo = file.type.startsWith("video/");
 
-      const { error: upErr } = await supabase.storage.from("works").upload(storagePath, file, {
-        cacheControl: "3600",
-        upsert: false,
-        contentType: file.type || "image/jpeg",
-      });
+      const { error: upErr } = await supabase.storage
+        .from("works")
+        .upload(storagePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type,
+        });
 
       if (upErr) throw upErr;
 
-      const { data: pub } = supabase.storage.from("works").getPublicUrl(storagePath);
-      const image_url = pub?.publicUrl;
-      if (!image_url) throw new Error("Impossibile ottenere public URL dell’immagine.");
+      const { data: pub } = supabase.storage
+        .from("works")
+        .getPublicUrl(storagePath);
+
+      const media_url = pub?.publicUrl;
+      if (!media_url) throw new Error("Impossibile ottenere public URL.");
 
       const { error: insErr } = await supabase.from("works").insert([
         {
           title: title.trim(),
           description: description.trim(),
-          image_url,
+          media_url,
+          media_type: isVideo ? "video" : "image",
           storage_path: storagePath,
+          // compatibilità con vecchio campo
+          ...(isVideo ? {} : { image_url: media_url }),
         },
       ]);
+
       if (insErr) throw insErr;
 
       setTitle("");
@@ -91,12 +101,16 @@ export default function AdminWorks() {
   };
 
   const handleDeleteWork = async (w) => {
-    if (!confirm("Eliminare questo lavoro? (foto + record)")) return;
+    if (!confirm("Eliminare questo lavoro? (media + record)")) return;
     setErr("");
     setLoading(true);
 
     try {
-      const { error: delErr } = await supabase.from("works").delete().eq("id", w.id);
+      const { error: delErr } = await supabase
+        .from("works")
+        .delete()
+        .eq("id", w.id);
+
       if (delErr) throw delErr;
 
       if (w.storage_path) {
@@ -111,6 +125,9 @@ export default function AdminWorks() {
     }
   };
 
+  const getUrl = (w) => w.media_url || w.image_url;
+  const isVideo = (w) => w.media_type === "video";
+
   const cardStyle = {
     background: "rgba(255,255,255,0.85)",
     borderRadius: 28,
@@ -122,7 +139,7 @@ export default function AdminWorks() {
   return (
     <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
       <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
-        Gestione lavori (foto + descrizione)
+        Gestione lavori (foto + video)
       </div>
 
       {err && (
@@ -168,7 +185,11 @@ export default function AdminWorks() {
           }}
         />
 
-        <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+        <input
+          type="file"
+          accept="image/*,video/*"
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
+        />
 
         <div style={{ display: "flex", gap: 10 }}>
           <button
@@ -205,10 +226,14 @@ export default function AdminWorks() {
         </div>
       </form>
 
-      <div style={{ marginTop: 18, fontWeight: 950, color: "#0b1224" }}>Lavori pubblicati</div>
+      <div style={{ marginTop: 18, fontWeight: 950, color: "#0b1224" }}>
+        Lavori pubblicati
+      </div>
 
       {works.length === 0 ? (
-        <div style={{ marginTop: 10, fontWeight: 800, color: "#64748b" }}>Nessun lavoro presente.</div>
+        <div style={{ marginTop: 10, fontWeight: 800, color: "#64748b" }}>
+          Nessun lavoro presente.
+        </div>
       ) : (
         <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
           {works.map((w) => (
@@ -225,15 +250,27 @@ export default function AdminWorks() {
                 alignItems: "start",
               }}
             >
-              <img
-                src={w.image_url}
-                alt={w.title}
-                style={{ width: 120, height: 90, objectFit: "cover", borderRadius: 14 }}
-              />
+              {isVideo(w) ? (
+                <video
+                  src={getUrl(w)}
+                  style={{ width: 120, height: 90, objectFit: "cover", borderRadius: 14 }}
+                  muted
+                />
+              ) : (
+                <img
+                  src={getUrl(w)}
+                  alt={w.title}
+                  style={{ width: 120, height: 90, objectFit: "cover", borderRadius: 14 }}
+                />
+              )}
+
               <div>
                 <div style={{ fontWeight: 950, fontSize: 18 }}>{w.title}</div>
-                <div style={{ marginTop: 6, fontWeight: 800, color: "#334155" }}>{w.description}</div>
+                <div style={{ marginTop: 6, fontWeight: 800, color: "#334155" }}>
+                  {w.description}
+                </div>
               </div>
+
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
                 <button
                   onClick={() => handleDeleteWork(w)}

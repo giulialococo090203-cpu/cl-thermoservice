@@ -1,13 +1,16 @@
+// src/pages/Index.jsx
 import Navbar from "../components/Navbar";
 import HeroSection from "../components/HeroSection";
 import ServicesSection from "../components/ServicesSection";
 import AboutSection from "../components/AboutSection";
 import CoverageSection from "../components/CoverageSection";
-import BrandsSection from "../components/BrandsSection";
+// ❌ BrandsSection NON serve più qui (ora è dentro HeroSection)
 import CertificationsSection from "../components/CertificationsSection";
 import WorksGallerySection from "../components/WorksGallerySection";
 import ReviewsSection from "../components/ReviewsSection";
 import QuickQuoteSection from "../components/QuickQuoteSection";
+import UsefulLinksSection from "../components/UsefulLinksSection";
+import FaqSection from "../components/FaqSection";
 import ContactSection from "../components/ContactSection";
 import Footer from "../components/Footer";
 
@@ -36,6 +39,8 @@ export default function Index() {
   return (
     <div>
       <Navbar />
+
+      {/* HERO (contiene anche la strip Marchi integrata) */}
       <HeroSection />
 
       {/* Band alternata */}
@@ -49,7 +54,6 @@ export default function Index() {
 
       <Band tone="soft">
         <CoverageSection />
-        <BrandsSection />
       </Band>
 
       <Band tone="plain">
@@ -64,7 +68,15 @@ export default function Index() {
         <ReviewsSection />
       </Band>
 
-      {/* Band “dark” per far risaltare il preventivo */}
+      {/* ✅ FAQ (consiglio "plain" o "soft": qui la metto plain per stacco pulito) */}
+      <Band tone="plain">
+        <FaqSection />
+      </Band>
+
+      <Band tone="soft">
+        <UsefulLinksSection />
+      </Band>
+
       <Band tone="dark">
         <QuickQuoteSection />
       </Band>

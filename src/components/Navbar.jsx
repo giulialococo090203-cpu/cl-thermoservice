@@ -12,6 +12,7 @@ export default function Navbar() {
       ["#certificazioni", "Certificazioni"],
       ["#lavori", "Lavori"],
       ["#recensioni", "Recensioni"],
+      ["#link-utili", "Link utili"], // ✅ NUOVO
       ["#preventivo", "Preventivo"],
       ["#contatti", "Contatti"],
     ],

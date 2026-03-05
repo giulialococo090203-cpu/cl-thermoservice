@@ -1,73 +1,100 @@
+// src/components/admin/AdminPanel.jsx
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "../../supabaseClient";
+import { supabaseAdmin } from "../../supabaseAdminClient";
 
 import AdminQuotes from "./AdminQuotes";
+import AdminServices from "./AdminServices";
+import AdminAbout from "./AdminAbout";
+import AdminFaq from "./AdminFaq"; // ✅ AGGIUNTO
 import AdminReviews from "./AdminReviews";
 import AdminWorks from "./AdminWorks";
+import AdminLinks from "./AdminLinks";
 
-const ADMIN_EMAILS = [
-  "admin@clthermoservice.it",
-  "clthermoservice@virgilio.it",
-  "test@a.it",
-];
+async function fetchUserRole(userId) {
+  const { data, error } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.role || null;
+}
 
 export default function AdminPanel() {
-  // AUTH
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
+
+  const [roleLoading, setRoleLoading] = useState(false);
+  const [roleError, setRoleError] = useState("");
+  const [role, setRole] = useState(null);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const userEmail = session?.user?.email || "";
-  const isAdmin = !!userEmail && ADMIN_EMAILS.includes(userEmail.toLowerCase());
+  const isAdmin = role === "admin";
 
   useEffect(() => {
     let sub;
 
     (async () => {
       setAuthLoading(true);
-      const { data, error } = await supabase.auth.getSession();
-      if (error) console.warn(error);
+      const { data } = await supabaseAdmin.auth.getSession();
       setSession(data?.session ?? null);
       setAuthLoading(false);
 
-      const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      const { data: listener } = supabaseAdmin.auth.onAuthStateChange((_event, newSession) => {
         setSession(newSession);
       });
       sub = listener?.subscription;
     })();
 
-    return () => {
-      if (sub) sub.unsubscribe();
-    };
+    return () => sub?.unsubscribe?.();
   }, []);
+
+  useEffect(() => {
+    if (!session?.user?.id) {
+      setRole(null);
+      setRoleError("");
+      return;
+    }
+
+    (async () => {
+      setRoleLoading(true);
+      setRoleError("");
+      try {
+        const r = await fetchUserRole(session.user.id);
+        setRole(r);
+        if (!r) setRoleError("Ruolo non trovato per questo utente.");
+      } catch (e) {
+        console.error(e);
+        setRole(null);
+        setRoleError(e?.message || "Impossibile leggere il ruolo (policy/RLS?).");
+      } finally {
+        setRoleLoading(false);
+      }
+    })();
+  }, [session?.user?.id]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setAuthError("");
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-      if (error) {
-        setAuthError(error.message || "Login fallito");
-        return;
-      }
-      setSession(data.session);
-    } catch (err) {
-      setAuthError(String(err?.message || err));
-    }
+    const { data, error } = await supabaseAdmin.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error) return setAuthError(error.message || "Login fallito");
+    setSession(data.session);
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await supabaseAdmin.auth.signOut();
     setSession(null);
+    setRole(null);
   };
 
-  // UI
   const containerRef = useRef(null);
 
   const cardStyle = {
@@ -82,16 +109,52 @@ export default function AdminPanel() {
     const base = {
       borderRadius: 16,
       padding: "12px 16px",
-      fontWeight: 800,
+      fontWeight: 900,
       border: "1px solid rgba(15,23,42,0.12)",
       cursor: "pointer",
+      whiteSpace: "nowrap",
     };
     if (variant === "dark")
       return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
     if (variant === "ghost") return { ...base, background: "#fff", color: "#0b1224" };
+    if (variant === "soft")
+      return {
+        ...base,
+        background: "#eef2ff",
+        color: "#111827",
+        border: "1px solid rgba(99,102,241,.25)",
+      };
     if (variant === "softDanger")
       return { ...base, background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" };
     return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
+  };
+
+  const dangerBox = {
+    padding: 14,
+    borderRadius: 16,
+    background: "#fee2e2",
+    border: "1px solid #fecaca",
+    color: "#991b1b",
+    fontWeight: 900,
+  };
+
+  const warnBox = {
+    padding: 14,
+    borderRadius: 16,
+    background: "#ffedd5",
+    border: "1px solid #fed7aa",
+    color: "#7c2d12",
+    fontWeight: 900,
+  };
+
+  const inputStyle = {
+    padding: "16px 18px",
+    borderRadius: 18,
+    border: "1px solid rgba(15,23,42,0.15)",
+    fontSize: 18,
+    fontWeight: 800,
+    outline: "none",
+    background: "#fff",
   };
 
   return (
@@ -105,14 +168,15 @@ export default function AdminPanel() {
       }}
     >
       <div style={{ maxWidth: 1150, margin: "0 auto" }}>
+        {/* HEADER */}
         <div style={{ ...cardStyle, padding: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 44, fontWeight: 950, color: "#0b1224", lineHeight: 1 }}>
                 Dashboard Admin
               </div>
-              <div style={{ marginTop: 10, color: "#475569", fontWeight: 700 }}>
-                Login riservato (Supabase Auth).
+              <div style={{ marginTop: 10, color: "#475569", fontWeight: 800 }}>
+                Accesso riservato (role: <b>admin</b>)
               </div>
             </div>
 
@@ -124,7 +188,7 @@ export default function AdminPanel() {
                     borderRadius: 999,
                     background: "#eef2ff",
                     border: "1px solid rgba(99,102,241,0.25)",
-                    fontWeight: 800,
+                    fontWeight: 900,
                     color: "#111827",
                     maxWidth: 520,
                     overflow: "hidden",
@@ -146,36 +210,17 @@ export default function AdminPanel() {
         {/* AUTH */}
         <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
           {authLoading ? (
-            <div style={{ fontWeight: 800, color: "#0b1224" }}>Caricamento…</div>
+            <div style={{ fontWeight: 900, color: "#0b1224" }}>Caricamento…</div>
           ) : !session ? (
             <form onSubmit={handleLogin} style={{ display: "grid", gap: 14, maxWidth: 620 }}>
-              {authError && (
-                <div
-                  style={{
-                    padding: 14,
-                    borderRadius: 16,
-                    background: "#fee2e2",
-                    border: "1px solid #fecaca",
-                    color: "#991b1b",
-                    fontWeight: 900,
-                  }}
-                >
-                  Errore login: {authError}
-                </div>
-              )}
+              {authError && <div style={dangerBox}>{authError}</div>}
 
               <input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email admin"
                 autoComplete="email"
-                style={{
-                  padding: "16px 18px",
-                  borderRadius: 18,
-                  border: "1px solid rgba(15,23,42,0.15)",
-                  fontSize: 18,
-                  fontWeight: 800,
-                }}
+                style={inputStyle}
               />
               <input
                 value={password}
@@ -183,47 +228,35 @@ export default function AdminPanel() {
                 placeholder="Password"
                 type="password"
                 autoComplete="current-password"
-                style={{
-                  padding: "16px 18px",
-                  borderRadius: 18,
-                  border: "1px solid rgba(15,23,42,0.15)",
-                  fontSize: 18,
-                  fontWeight: 800,
-                }}
+                style={inputStyle}
               />
               <button style={{ ...btn("dark"), padding: "16px 18px", fontSize: 18 }} type="submit">
                 Entra
               </button>
             </form>
+          ) : roleLoading ? (
+            <div style={{ fontWeight: 900, color: "#0b1224" }}>Verifica permessi…</div>
+          ) : roleError ? (
+            <div style={warnBox}>Errore permessi: {roleError}</div>
           ) : !isAdmin ? (
-            <div
-              style={{
-                padding: 14,
-                borderRadius: 16,
-                background: "#ffedd5",
-                border: "1px solid #fed7aa",
-                color: "#7c2d12",
-                fontWeight: 900,
-              }}
-            >
-              Sei loggato come <b>{userEmail}</b> ma non sei nella lista admin.
-              <div style={{ marginTop: 10 }}>
-                <button style={btn("ghost")} onClick={handleLogout}>
-                  Esci
-                </button>
-              </div>
+            <div style={dangerBox}>
+              Accesso negato: questo pannello è solo per <b>admin</b>.
             </div>
           ) : (
-            <div style={{ fontWeight: 900, color: "#0b1224" }}>✅ Accesso admin confermato.</div>
+            <div style={{ fontWeight: 950, color: "#0b1224" }}>✅ Accesso admin confermato.</div>
           )}
         </div>
 
-        {/* ADMIN CONTENT */}
+        {/* SEZIONI */}
         {session && isAdmin && (
           <>
             <AdminQuotes />
+            <AdminServices />
+            <AdminAbout />
+            <AdminFaq /> {/* ✅ AGGIUNTO */}
             <AdminReviews />
             <AdminWorks />
+            <AdminLinks />
           </>
         )}
       </div>

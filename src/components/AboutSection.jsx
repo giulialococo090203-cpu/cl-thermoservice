@@ -1,14 +1,67 @@
+import { useEffect, useMemo, useState } from "react";
 import Reveal from "./Reveal";
-import { CheckCircle2, BadgeCheck, Timer, Shield } from "lucide-react";
+import { supabase } from "../supabaseClient"; // <-- verifica path: se il tuo supabaseClient è in src/supabaseClient
 
-const points = [
-  "Tecnici qualificati e certificati",
-  "Ricambi originali garantiti",
-  "Interventi rapidi e puntuali",
-  "Impiantistica civile e industriale",
-  "Garanzia su tutti i lavori",
-  "Progetti su larga scala",
-];
+import {
+  CheckCircle2,
+  BadgeCheck,
+  Timer,
+  Shield,
+} from "lucide-react";
+
+// =====================
+// CONFIG
+// =====================
+
+// ✅ metti qui la tabella reale (quella con company_id + payload)
+const ABOUT_TABLE = "about_content";
+
+// ✅ la tua azienda è sempre CL Thermoservice
+const COMPANY_ID = "21cb4d5d-9566-4488-802c-a6b28488e486";
+
+// icone consentite per i “dati operativi”
+const STAT_ICONS = {
+  Timer,
+  BadgeCheck,
+  Shield,
+};
+
+// =====================
+// DEFAULT (fallback)
+// =====================
+const DEFAULT_ABOUT = {
+  kicker: "CHI SIAMO",
+  title: "Affidabilità e competenza, dal primo intervento",
+  lead:
+    "Thermoservice è un riferimento per assistenza caldaie e impianti termici. Lavoriamo con procedure chiare, attenzione alla sicurezza e cura dei dettagli: meno sorprese, più controllo e qualità.",
+
+  leftTitle: "Un approccio ordinato e professionale",
+  leftBody:
+    "Prima ascoltiamo, poi analizziamo e infine interveniamo. Quando possibile, ti spieghiamo le opzioni e i costi in modo semplice: l’obiettivo è risolvere bene al primo colpo.",
+
+  points: [
+    "Tecnici qualificati e certificati",
+    "Ricambi originali garantiti",
+    "Interventi rapidi e puntuali",
+    "Impiantistica civile e industriale",
+    "Garanzia su tutti i lavori",
+    "Progetti su larga scala",
+  ],
+
+  statsKicker: "Dati operativi",
+  statsValue: "10+",
+  statsLabel: "Anni di esperienza sul territorio",
+
+  // cards a destra (con icona)
+  statCards: [
+    { icon: "Timer", value: "Interventi rapidi", label: "Gestione urgenze e appuntamenti" },
+    { icon: "BadgeCheck", value: "Garanzia lavori", label: "Procedure e ricambi adeguati" },
+    { icon: "Shield", value: "Sicurezza", label: "Controlli e conformità impianto" },
+  ],
+
+  statsFooter:
+    "Ogni intervento segue una checklist: diagnosi, spiegazione, esecuzione e verifica finale.",
+};
 
 function Stat({ icon: Icon, value, label }) {
   return (
@@ -39,7 +92,9 @@ function Stat({ icon: Icon, value, label }) {
       </div>
 
       <div>
-        <div style={{ fontWeight: 950, fontSize: 22, letterSpacing: "-0.02em", lineHeight: 1.1 }}>{value}</div>
+        <div style={{ fontWeight: 950, fontSize: 22, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+          {value}
+        </div>
         <div style={{ opacity: 0.82, fontWeight: 650 }}>{label}</div>
       </div>
     </div>
@@ -47,6 +102,62 @@ function Stat({ icon: Icon, value, label }) {
 }
 
 export default function AboutSection() {
+  const [about, setAbout] = useState(DEFAULT_ABOUT);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from(ABOUT_TABLE)
+          .select("payload, updated_at")
+          .eq("company_id", COMPANY_ID)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        const payload = data?.payload || null;
+
+        if (!alive) return;
+
+        if (payload && typeof payload === "object") {
+          // merge: payload sovrascrive i default
+          setAbout((prev) => ({ ...prev, ...payload }));
+        }
+      } catch (e) {
+        // Se RLS blocca o tabella errata: resta ai default (non pagina bianca)
+        console.warn("AboutSection: fetch fallito:", e?.message || e);
+      } finally {
+        if (alive) setLoaded(true);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const points = useMemo(() => {
+    const p = about?.points;
+    return Array.isArray(p) && p.length ? p : DEFAULT_ABOUT.points;
+  }, [about]);
+
+  const statCards = useMemo(() => {
+    const arr = about?.statCards;
+    if (!Array.isArray(arr) || !arr.length) return DEFAULT_ABOUT.statCards;
+
+    // normalizza icone
+    return arr.map((c) => ({
+      icon: STAT_ICONS[c?.icon] ? c.icon : "Timer",
+      value: String(c?.value || ""),
+      label: String(c?.label || ""),
+    }));
+  }, [about]);
+
   return (
     <section id="chi-siamo" className="section">
       <div className="container">
@@ -60,21 +171,25 @@ export default function AboutSection() {
             border: "1px solid rgba(15,23,42,.06)",
           }}
         >
-          {/* Header non centrato per variare */}
           <Reveal>
             <div style={{ maxWidth: 980, margin: "0 auto", textAlign: "left" }}>
-              <div className="kicker">CHI SIAMO</div>
+              <div className="kicker">{about.kicker || DEFAULT_ABOUT.kicker}</div>
               <h2 className="h2" style={{ marginBottom: 10 }}>
-                Affidabilità e competenza, dal primo intervento
+                {about.title || DEFAULT_ABOUT.title}
               </h2>
               <p className="lead" style={{ marginTop: 0, maxWidth: 900 }}>
-                Thermoservice è un riferimento per assistenza caldaie e impianti termici. Lavoriamo con procedure
-                chiare, attenzione alla sicurezza e cura dei dettagli: meno sorprese, più controllo e qualità.
+                {about.lead || DEFAULT_ABOUT.lead}
               </p>
+
+              {/* opzionale: piccola spia debug (puoi togliere) */}
+              {!loaded ? (
+                <div style={{ marginTop: 8, color: "#64748b", fontWeight: 800, fontSize: 12 }}>
+                  Carico contenuti…
+                </div>
+              ) : null}
             </div>
           </Reveal>
 
-          {/* 2 colonne: testo + punti / stats */}
           <div
             style={{
               marginTop: 18,
@@ -86,7 +201,7 @@ export default function AboutSection() {
               marginInline: "auto",
             }}
           >
-            {/* Colonna sinistra: narrative + points */}
+            {/* SINISTRA */}
             <div>
               <Reveal>
                 <div
@@ -99,11 +214,11 @@ export default function AboutSection() {
                   }}
                 >
                   <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.01em" }}>
-                    Un approccio ordinato e professionale
+                    {about.leftTitle || DEFAULT_ABOUT.leftTitle}
                   </div>
+
                   <p style={{ margin: "10px 0 0", color: "rgba(15,23,42,.72)", fontWeight: 600, lineHeight: 1.75 }}>
-                    Prima ascoltiamo, poi analizziamo e infine interveniamo. Quando possibile, ti spieghiamo le opzioni
-                    e i costi in modo semplice: l’obiettivo è risolvere bene al primo colpo.
+                    {about.leftBody || DEFAULT_ABOUT.leftBody}
                   </p>
 
                   <div
@@ -149,7 +264,7 @@ export default function AboutSection() {
               </Reveal>
             </div>
 
-            {/* Colonna destra: stats premium separata */}
+            {/* DESTRA */}
             <Reveal>
               <div
                 style={{
@@ -163,24 +278,25 @@ export default function AboutSection() {
                 }}
               >
                 <div style={{ fontWeight: 900, fontSize: 18, opacity: 0.92, letterSpacing: "-0.01em" }}>
-                  Dati operativi
+                  {about.statsKicker || DEFAULT_ABOUT.statsKicker}
                 </div>
 
                 <div style={{ marginTop: 10, fontSize: 60, fontWeight: 950, lineHeight: 1, letterSpacing: "-0.03em" }}>
-                  10+
+                  {about.statsValue || DEFAULT_ABOUT.statsValue}
                 </div>
                 <div style={{ marginTop: 8, opacity: 0.9, fontWeight: 650 }}>
-                  Anni di esperienza sul territorio
+                  {about.statsLabel || DEFAULT_ABOUT.statsLabel}
                 </div>
 
                 <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
-                  <Stat icon={Timer} value="Interventi rapidi" label="Gestione urgenze e appuntamenti" />
-                  <Stat icon={BadgeCheck} value="Garanzia lavori" label="Procedure e ricambi adeguati" />
-                  <Stat icon={Shield} value="Sicurezza" label="Controlli e conformità impianto" />
+                  {statCards.map((c, idx) => {
+                    const Icon = STAT_ICONS[c.icon] || Timer;
+                    return <Stat key={idx} icon={Icon} value={c.value} label={c.label} />;
+                  })}
                 </div>
 
                 <div style={{ marginTop: 16, opacity: 0.9, fontWeight: 650, lineHeight: 1.6 }}>
-                  Ogni intervento segue una checklist: diagnosi, spiegazione, esecuzione e verifica finale.
+                  {about.statsFooter || DEFAULT_ABOUT.statsFooter}
                 </div>
               </div>
             </Reveal>

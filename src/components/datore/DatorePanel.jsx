@@ -1,0 +1,1064 @@
+// src/components/datore/DatorePanel.jsx
+import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "../../supabaseClient";
+
+// ✅ NEW: componente archivio preventivi
+import QuoteArchiveManager from "./QuoteArchiveManager";
+
+import {
+  fetchUserRole,
+  fetchMyCompanyId,
+  fetchCompany,
+  listRequests,
+  listQuoteFiles,
+  insertQuoteHeader,
+  insertQuoteItems,
+  insertQuoteFileRow,
+  uploadPdfToStorage,
+  createSignedUrl,
+} from "./datoreApi";
+
+import { buildRequestsPdfBlob, buildQuotePdfBlob, fmtDateTime, fmtEuro } from "./pdf";
+import { computeTotals, validateAndCleanItems, sanitizeText, uid } from "./validators";
+
+import RequestsManager from "./RequestsManager";
+export default function DatorePanel() {
+  // AUTH
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState("");
+
+  // ROLE + COMPANY
+  const [roleLoading, setRoleLoading] = useState(false);
+  const [roleError, setRoleError] = useState("");
+  const [role, setRole] = useState(null); // "admin" | "employer" | null
+  const [companyId, setCompanyId] = useState(null);
+  const [company, setCompany] = useState(null);
+
+  // LOGIN FORM
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // DATA: richieste (quotes)
+  const [requests, setRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestsError, setRequestsError] = useState("");
+
+  // DATA: pdf salvati (quote_files)
+  const [files, setFiles] = useState([]);
+  const [filesLoading, setFilesLoading] = useState(false);
+  const [filesError, setFilesError] = useState("");
+
+  // MULTI-SELEZIONE PDF nello storico
+  const [selectedPaths, setSelectedPaths] = useState([]); // array di storage_path
+  const [lastCreatedStoragePath, setLastCreatedStoragePath] = useState(null);
+
+  // CREA PREVENTIVO
+  const [activeRequest, setActiveRequest] = useState(null); // richiesta selezionata (può essere null)
+  const [manualQuote, setManualQuote] = useState(false); // ✅ preventivo anche senza richiesta
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
+  const [createOk, setCreateOk] = useState("");
+
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [notesInternal, setNotesInternal] = useState("");
+
+  const [items, setItems] = useState([
+    { title: "Intervento", description: "", qty: 1, unit_price: 0, vat_rate: 10 },
+  ]);
+
+  const userEmail = session?.user?.email || "";
+  const isEmployer = role === "employer";
+
+  const containerRef = useRef(null);
+  const filesSectionRef = useRef(null);
+
+  // ---------- UI styles
+  const cardStyle = {
+    background: "rgba(255,255,255,0.85)",
+    borderRadius: 28,
+    border: "1px solid rgba(15,23,42,0.08)",
+    boxShadow: "0 20px 60px rgba(2,6,23,0.10)",
+    backdropFilter: "blur(10px)",
+  };
+
+  const btn = (variant = "dark") => {
+    const base = {
+      borderRadius: 16,
+      padding: "12px 16px",
+      fontWeight: 900,
+      border: "1px solid rgba(15,23,42,0.12)",
+      cursor: "pointer",
+      whiteSpace: "nowrap",
+    };
+    if (variant === "dark")
+      return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
+    if (variant === "ghost") return { ...base, background: "#fff", color: "#0b1224" };
+    if (variant === "soft")
+      return {
+        ...base,
+        background: "#eef2ff",
+        color: "#111827",
+        border: "1px solid rgba(99,102,241,.25)",
+      };
+    if (variant === "danger")
+      return { ...base, background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" };
+    return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
+  };
+
+  // ---------- SESSION INIT
+  useEffect(() => {
+    let sub;
+
+    (async () => {
+      setAuthLoading(true);
+      const { data } = await supabase.auth.getSession();
+      setSession(data?.session ?? null);
+      setAuthLoading(false);
+
+      const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+        setSession(newSession);
+      });
+
+      sub = listener?.subscription;
+    })();
+
+    return () => {
+      if (sub) sub.unsubscribe();
+    };
+  }, []);
+
+  // ---------- LOAD ROLE + COMPANY
+  useEffect(() => {
+    let alive = true;
+
+    (async () => {
+      setRole(null);
+      setCompanyId(null);
+      setCompany(null);
+      setRoleError("");
+
+      if (!session?.user?.id) return;
+
+      setRoleLoading(true);
+      try {
+        const r = await fetchUserRole(session.user.id);
+        const cId = await fetchMyCompanyId(session.user.id);
+
+        if (!alive) return;
+
+        setRole(r);
+        setCompanyId(cId || null);
+
+        if (!cId) {
+          setRoleError("company_id mancante sul profilo (tabella profiles).");
+          setRoleLoading(false);
+          return;
+        }
+
+        const c = await fetchCompany(cId);
+        if (!alive) return;
+        setCompany(c || null);
+      } catch (e) {
+        console.error(e);
+        if (!alive) return;
+        setRoleError(e?.message || "Impossibile verificare permessi/azienda.");
+      } finally {
+        if (alive) setRoleLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [session?.user?.id]);
+
+  // ---------- LOAD DATA
+  const loadRequests = async () => {
+    if (!companyId) return;
+    setRequestsError("");
+    setRequestsLoading(true);
+    try {
+      const rows = await listRequests(companyId);
+      setRequests(rows);
+    } catch (e) {
+      console.error(e);
+      setRequestsError(e?.message || "Errore caricamento richieste (quotes).");
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  const loadFiles = async () => {
+    if (!companyId) return;
+    setFilesError("");
+    setFilesLoading(true);
+    try {
+      const rows = await listQuoteFiles(companyId);
+      setFiles(rows);
+
+      // mantieni selezione solo su path ancora esistenti
+      setSelectedPaths((prev) => prev.filter((p) => rows.some((r) => r.storage_path === p)));
+    } catch (e) {
+      console.error(e);
+      setFilesError(e?.message || "Errore caricamento file preventivi (quote_files).");
+    } finally {
+      setFilesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    if (roleLoading || roleError) return;
+    if (!isEmployer) return;
+    if (!companyId) return;
+
+    loadRequests();
+    loadFiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id, roleLoading, roleError, role, companyId]);
+
+  // ---------- LOGIN/LOGOUT
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setAuthError("");
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) {
+        setAuthError(error.message || "Login fallito");
+        return;
+      }
+
+      setSession(data.session);
+    } catch (err) {
+      setAuthError(String(err?.message || err));
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setRole(null);
+    setCompanyId(null);
+    setCompany(null);
+    setActiveRequest(null);
+    setManualQuote(false);
+    setSelectedPaths([]);
+    setLastCreatedStoragePath(null);
+  };
+
+  // ---------- PREVENTIVO: seleziona richiesta
+  const pickRequest = (q) => {
+    setManualQuote(false);
+    setActiveRequest(q);
+    setCreateError("");
+    setCreateOk("");
+    setLastCreatedStoragePath(null);
+
+    const fullName = `${q?.nome || ""} ${q?.cognome || ""}`.trim();
+    setCustomerName(fullName || "");
+    setCustomerEmail(q?.email || "");
+    setCustomerPhone(q?.telefono || "");
+    setCustomerAddress("");
+    setNotesInternal(q?.messaggio || "");
+
+    setItems([{ title: "Intervento", description: "", qty: 1, unit_price: 0, vat_rate: 10 }]);
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // ✅ PREVENTIVO MANUALE (senza richiesta)
+  const startManualQuote = () => {
+    setActiveRequest(null);
+    setManualQuote(true);
+    setCreateError("");
+    setCreateOk("");
+    setLastCreatedStoragePath(null);
+
+    setCustomerName("");
+    setCustomerEmail("");
+    setCustomerPhone("");
+    setCustomerAddress("");
+    setNotesInternal("");
+
+    setItems([{ title: "Intervento", description: "", qty: 1, unit_price: 0, vat_rate: 10 }]);
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // ---------- items helpers
+  const updateItem = (idx, patch) => {
+    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+  };
+
+  const addItem = () => {
+    setItems((prev) => [
+      ...prev,
+      { title: "Voce", description: "", qty: 1, unit_price: 0, vat_rate: 10 },
+    ]);
+  };
+
+  const removeItem = (idx) => {
+    setItems((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  // Totali su items “puliti”
+  const cleanedForTotals = useMemo(() => {
+    const v = validateAndCleanItems(items);
+    return v.ok ? v.items : [];
+  }, [items]);
+
+  const totals = useMemo(() => computeTotals(cleanedForTotals), [cleanedForTotals]);
+
+  // ---------- Scarica PDF richieste (clienti)
+  const handleDownloadRequestsPdf = () => {
+    const blob = buildRequestsPdfBlob(requests, `${company?.name || "Azienda"} — Richieste preventivo`);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "richieste-clienti.pdf";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  // ---------- Download PDF salvato (NO popup): signedUrl -> fetch(blob) -> download
+  const downloadSavedPdf = async (storagePath) => {
+    const signed = await createSignedUrl(storagePath, 300);
+    const signedUrl =
+      typeof signed === "string"
+        ? signed
+        : signed?.signedUrl || signed?.url || signed?.data?.signedUrl || null;
+
+    if (!signedUrl) {
+      throw new Error("Signed URL non disponibile (controlla createSignedUrl in datoreApi).");
+    }
+
+    const res = await fetch(signedUrl, { cache: "no-store" });
+    if (!res.ok) throw new Error(`Download fallito (${res.status}).`);
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+
+    const fileName = storagePath.split("/").pop() || "preventivo.pdf";
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  };
+
+  const downloadSelectedPdfs = async () => {
+    if (!selectedPaths.length) return;
+    try {
+      for (let i = 0; i < selectedPaths.length; i++) {
+        // eslint-disable-next-line no-await-in-loop
+        await downloadSavedPdf(selectedPaths[i]);
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((r) => setTimeout(r, 250));
+      }
+    } catch (e) {
+      console.error(e);
+      alert(e?.message || "Errore download PDF.");
+    }
+  };
+
+  // ---------- ELIMINA PDF SELEZIONATI (Storage + tabella)
+  const deleteSelectedPdfs = async () => {
+    if (!selectedPaths.length) return;
+
+    const ok = window.confirm(`Eliminare ${selectedPaths.length} PDF selezionati?`);
+    if (!ok) return;
+
+    try {
+      const { error: storErr } = await supabase.storage.from("quote_files").remove(selectedPaths);
+      if (storErr) throw storErr;
+
+      const { error: dbErr } = await supabase
+        .from("quote_files")
+        .delete()
+        .eq("company_id", companyId)
+        .in("storage_path", selectedPaths);
+
+      if (dbErr) throw dbErr;
+
+      setSelectedPaths([]);
+      setLastCreatedStoragePath(null);
+
+      await loadFiles();
+      alert("✅ Eliminati.");
+    } catch (e) {
+      console.error(e);
+      alert(e?.message || "Errore eliminazione PDF.");
+    }
+  };
+
+  // ---------- selezione multi
+  const togglePath = (p) => {
+    setSelectedPaths((prev) => {
+      if (prev.includes(p)) return prev.filter((x) => x !== p);
+      return [...prev, p];
+    });
+  };
+
+  const selectAllFiles = () => {
+    setSelectedPaths(files.map((f) => f.storage_path));
+  };
+
+  const deselectAllFiles = () => {
+    setSelectedPaths([]);
+  };
+
+  // ---------- CREA PREVENTIVO + PDF + SALVATAGGIO (NO download automatico)
+  const createQuoteAndSavePdf = async () => {
+    setCreateError("");
+    setCreateOk("");
+
+    if (!companyId) return setCreateError("company_id mancante.");
+    if (!session?.user?.id) return setCreateError("Sessione non valida.");
+
+    if (!manualQuote && !activeRequest) {
+      return setCreateError("Seleziona una richiesta oppure usa “Nuovo preventivo”.");
+    }
+
+    const custName = sanitizeText(customerName, 120);
+    if (!custName) return setCreateError("Inserisci nome cliente.");
+
+    const valid = validateAndCleanItems(items);
+    if (!valid.ok) return setCreateError(valid.error);
+
+    const safeNotes = sanitizeText(notesInternal, 1200);
+    const safeEmail = sanitizeText(customerEmail, 120);
+    const safePhone = sanitizeText(customerPhone, 60);
+    const safeAddr = sanitizeText(customerAddress, 180);
+
+    const safeTotals = computeTotals(valid.items);
+
+    setCreating(true);
+
+    try {
+      // 1) INSERT HEADER
+      const headerPayload = {
+        company_id: companyId,
+        customer_name: custName,
+        customer_email: safeEmail || null,
+        customer_phone: safePhone || null,
+        customer_address: safeAddr || null,
+        notes_internal: safeNotes || null,
+        status: "draft",
+        total: safeTotals.total,
+        currency: "EUR",
+        created_by: session.user.id,
+      };
+
+      const header = await insertQuoteHeader(headerPayload);
+      const quoteId = header.id;
+
+      // 2) INSERT ITEMS
+      const itemsPayload = valid.items.map((it, idx) => ({
+        id: uid(),
+        quote_id: quoteId,
+        company_id: companyId,
+        title: it.title,
+        description: it.description,
+        qty: it.qty,
+        unit_price: it.unit_price,
+        vat_rate: it.vat_rate,
+        line_total: it.line_total,
+        sort_order: idx + 1,
+      }));
+
+      await insertQuoteItems(itemsPayload);
+
+      // 3) BUILD PDF BLOB
+      const pdfBlob = await buildQuotePdfBlob({
+        company,
+        header,
+        items: valid.items,
+        totals: safeTotals,
+      });
+
+      // 4) UPLOAD STORAGE
+      const { storagePath } = await uploadPdfToStorage({
+        companyId,
+        quoteId,
+        blob: pdfBlob,
+      });
+
+      // 5) INSERT TABLE quote_files
+      await insertQuoteFileRow({
+        quote_id: quoteId,
+        company_id: companyId,
+        storage_path: storagePath,
+      });
+
+      setCreateOk("✅ Preventivo creato e salvato. Lo trovi nello storico qui sotto (selezionato).");
+      setLastCreatedStoragePath(storagePath);
+      setSelectedPaths([storagePath]);
+
+      await loadFiles();
+      await loadRequests();
+
+      setTimeout(() => {
+        filesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    } catch (e) {
+      console.error(e);
+
+      const msg = String(e?.message || e);
+
+      if (msg.toLowerCase().includes("numeric field overflow")) {
+        setCreateError("Errore: numeri troppo grandi per il database. Riduci quantità/prezzo/IVA.");
+      } else if (msg.toLowerCase().includes("row-level security")) {
+        setCreateError(
+          "Errore permessi (RLS): la policy non consente questo inserimento. Controlla le policy su quote_headers / quote_items / quote_files."
+        );
+      } else {
+        setCreateError(msg || "Errore creazione preventivo/PDF.");
+      }
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const showQuoteForm = manualQuote || !!activeRequest;
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        minHeight: "100vh",
+        padding: "28px 18px",
+        background:
+          "radial-gradient(1200px 600px at 15% 5%, rgba(59,130,246,0.10), transparent 55%), radial-gradient(1200px 600px at 85% 0%, rgba(244,63,94,0.10), transparent 55%), #f6f8fb",
+      }}
+    >
+      <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+        {/* HEADER */}
+        <div style={{ ...cardStyle, padding: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontSize: 54, fontWeight: 950, color: "#0b1224", lineHeight: 1 }}>Area Datore</div>
+              <div style={{ marginTop: 10, color: "#475569", fontWeight: 800 }}>
+                Accesso riservato (role richiesto: <b>employer</b>)
+              </div>
+              {company?.name ? (
+                <div style={{ marginTop: 10, color: "#0b1224", fontWeight: 900 }}>Azienda: {company.name}</div>
+              ) : null}
+            </div>
+
+            {session && (
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: 999,
+                    background: "#eef2ff",
+                    border: "1px solid rgba(99,102,241,0.25)",
+                    fontWeight: 900,
+                    color: "#111827",
+                    maxWidth: 520,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={userEmail}
+                >
+                  Loggato: {userEmail}
+                </span>
+                <button style={btn("ghost")} onClick={handleLogout}>
+                  Esci
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* AUTH */}
+        <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
+          {authLoading ? (
+            <div style={{ fontWeight: 900, color: "#0b1224" }}>Caricamento…</div>
+          ) : !session ? (
+            <form onSubmit={handleLogin} style={{ display: "grid", gap: 14, maxWidth: 620 }}>
+              {authError && <div style={dangerBox}>Errore login: {authError}</div>}
+
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email datore"
+                autoComplete="email"
+                style={inputStyle}
+              />
+              <input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                type="password"
+                autoComplete="current-password"
+                style={inputStyle}
+              />
+              <button style={{ ...btn("dark"), padding: "16px 18px", fontSize: 18 }} type="submit">
+                Entra
+              </button>
+            </form>
+          ) : roleLoading ? (
+            <div style={{ fontWeight: 900, color: "#0b1224" }}>Verifica permessi…</div>
+          ) : roleError ? (
+            <div style={warnBox}>
+              Errore permessi: {roleError}
+              <div style={{ marginTop: 10 }}>
+                <button style={btn("ghost")} onClick={handleLogout}>
+                  Esci
+                </button>
+              </div>
+            </div>
+          ) : !isEmployer ? (
+            <div style={dangerBox}>
+              Accesso negato: questa area è solo per <b>datori</b> (role: employer).
+              <div style={{ marginTop: 10 }}>
+                <button style={btn("ghost")} onClick={handleLogout}>
+                  Esci
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontWeight: 950, color: "#0b1224" }}>✅ Accesso datore confermato.</div>
+          )}
+        </div>
+
+        {/* CONTENUTO DATORE */}
+        {session && isEmployer && !roleLoading && !roleError && (
+          <>
+            <RequestsManager
+  companyId={companyId}
+  requests={requests}
+  loading={requestsLoading}
+  error={requestsError}
+  onRefresh={loadRequests}
+  onPick={pickRequest}
+  onStartManualQuote={startManualQuote}
+  onDownloadPdf={handleDownloadRequestsPdf}
+/>
+
+            {/* CREA PREVENTIVO */}
+            <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
+              <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
+                Generazione preventivo (PDF + salvataggio)
+              </div>
+              <div style={{ marginTop: 6, color: "#475569", fontWeight: 800 }}>
+                Puoi generare da una richiesta <b>oppure</b> cliccare “Nuovo preventivo”. Il PDF verrà salvato nel bucket{" "}
+                <b>quote_files</b>.
+              </div>
+
+              {!showQuoteForm ? (
+                <div style={hintBox}>
+                  Seleziona una richiesta e clicca “Usa richiesta” oppure premi “Nuovo preventivo”.
+                </div>
+              ) : (
+                <>
+                  {createError && <div style={dangerBox}>{createError}</div>}
+                  {createOk && <div style={okBox}>{createOk}</div>}
+
+                  <div style={{ marginTop: 14, display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
+                    <input
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Nome cliente"
+                      style={inputStyle}
+                    />
+                    <input
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      placeholder="Email cliente"
+                      style={inputStyle}
+                    />
+                    <input
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      placeholder="Telefono cliente"
+                      style={inputStyle}
+                    />
+                    <input
+                      value={customerAddress}
+                      onChange={(e) => setCustomerAddress(e.target.value)}
+                      placeholder="Indirizzo cliente"
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  <textarea
+                    value={notesInternal}
+                    onChange={(e) => setNotesInternal(e.target.value)}
+                    placeholder="Descrizione / note libere"
+                    rows={4}
+                    style={{ ...inputStyle, marginTop: 12, resize: "vertical" }}
+                  />
+
+                  <div style={{ marginTop: 16, fontWeight: 950, color: "#0b1224" }}>Voci preventivo</div>
+
+                  <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                    {items.map((it, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          background: "#fff",
+                          border: "1px solid rgba(15,23,42,0.10)",
+                          borderRadius: 20,
+                          padding: 14,
+                          display: "grid",
+                          gridTemplateColumns: "1.2fr 1.3fr 110px 140px 110px 110px",
+                          gap: 10,
+                          alignItems: "start",
+                        }}
+                      >
+                        <input
+                          value={it.title ?? ""}
+                          onChange={(e) => updateItem(idx, { title: e.target.value })}
+                          placeholder="Titolo"
+                          style={miniInput}
+                        />
+                        <input
+                          value={it.description ?? ""}
+                          onChange={(e) => updateItem(idx, { description: e.target.value })}
+                          placeholder="Descrizione"
+                          style={miniInput}
+                        />
+                        <input
+                          value={String(it.qty ?? "")}
+                          onChange={(e) => updateItem(idx, { qty: e.target.value })}
+                          placeholder="Qta"
+                          style={miniInput}
+                        />
+                        <input
+                          value={String(it.unit_price ?? "")}
+                          onChange={(e) => updateItem(idx, { unit_price: e.target.value })}
+                          placeholder="Prezzo (€)"
+                          style={miniInput}
+                        />
+                        <input
+                          value={String(it.vat_rate ?? "")}
+                          onChange={(e) => updateItem(idx, { vat_rate: e.target.value })}
+                          placeholder="IVA %"
+                          style={miniInput}
+                        />
+
+                        <button
+                          style={{ ...btn("danger"), height: 44 }}
+                          onClick={() => removeItem(idx)}
+                          type="button"
+                          disabled={items.length === 1}
+                        >
+                          Rimuovi
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 12,
+                      display: "flex",
+                      gap: 10,
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
+                    <button style={btn("ghost")} type="button" onClick={addItem}>
+                      + Aggiungi voce
+                    </button>
+
+                    <div
+                      style={{
+                        marginLeft: "auto",
+                        display: "flex",
+                        gap: 10,
+                        flexWrap: "wrap",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <div style={pill}>Imponibile: € {fmtEuro(totals.subtotal)}</div>
+                      <div style={pill}>IVA: € {fmtEuro(totals.vat)}</div>
+                      <div style={{ ...pill, fontWeight: 950 }}>Totale: € {fmtEuro(totals.total)}</div>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 14,
+                      display: "flex",
+                      gap: 12,
+                      flexWrap: "wrap",
+                      alignItems: "stretch",
+                      width: "100%",
+                    }}
+                  >
+                    <button
+                      style={{
+                        ...btn("dark"),
+                        flex: "1 1 320px",
+                        minWidth: 0,
+                        maxWidth: "100%",
+                        opacity: creating ? 0.7 : 1,
+                      }}
+                      type="button"
+                      onClick={createQuoteAndSavePdf}
+                      disabled={creating}
+                    >
+                      {creating ? "Salvo..." : "Crea preventivo + Salva PDF"}
+                    </button>
+
+                    <button
+                      style={{
+                        ...btn("ghost"),
+                        flex: "0 0 auto",
+                        minWidth: 140,
+                      }}
+                      type="button"
+                      onClick={() => {
+                        setActiveRequest(null);
+                        setManualQuote(false);
+                        setCreateError("");
+                        setCreateOk("");
+
+                        setCustomerName("");
+                        setCustomerEmail("");
+                        setCustomerPhone("");
+                        setCustomerAddress("");
+                        setNotesInternal("");
+
+                        setItems([{ title: "Intervento", description: "", qty: 1, unit_price: 0, vat_rate: 10 }]);
+                      }}
+                      disabled={creating}
+                    >
+                      Chiudi
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* ✅ ARCHIVIO PREVENTIVI (ZIP + pulizia DB/storage) */}
+            <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
+              <QuoteArchiveManager
+                companyId={companyId}
+                onDone={async () => {
+                  setSelectedPaths([]);
+                  setLastCreatedStoragePath(null);
+                  await loadFiles();
+                  await loadRequests();
+                }}
+              />
+            </div>
+
+            {/* STORICO PDF */}
+            <div ref={filesSectionRef} style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>Storico PDF preventivi salvati</div>
+                  <div style={{ marginTop: 6, color: "#475569", fontWeight: 800 }}>
+                    Seleziona uno o più PDF → poi scarica/elimina dai pulsanti.
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <button style={btn("ghost")} onClick={loadFiles}>
+                    Aggiorna
+                  </button>
+                  <button style={btn("soft")} type="button" onClick={selectAllFiles} disabled={!files.length}>
+                    Seleziona tutti
+                  </button>
+                  <button style={btn("ghost")} type="button" onClick={deselectAllFiles} disabled={!selectedPaths.length}>
+                    Deseleziona
+                  </button>
+
+                  <button
+                    style={{
+                      ...btn("dark"),
+                      opacity: selectedPaths.length ? 1 : 0.55,
+                      cursor: selectedPaths.length ? "pointer" : "not-allowed",
+                    }}
+                    onClick={downloadSelectedPdfs}
+                    disabled={!selectedPaths.length}
+                  >
+                    Scarica selezionati ({selectedPaths.length})
+                  </button>
+
+                  <button
+                    style={{
+                      ...btn("danger"),
+                      opacity: selectedPaths.length ? 1 : 0.55,
+                      cursor: selectedPaths.length ? "pointer" : "not-allowed",
+                    }}
+                    onClick={deleteSelectedPdfs}
+                    disabled={!selectedPaths.length}
+                  >
+                    Elimina selezionati ({selectedPaths.length})
+                  </button>
+                </div>
+              </div>
+
+              {filesError && <div style={dangerBox}>{filesError}</div>}
+
+              <div
+                style={{
+                  marginTop: 14,
+                  borderRadius: 18,
+                  overflow: "hidden",
+                  border: "1px solid rgba(15,23,42,0.10)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "56px 220px 1fr",
+                    background: "#f3f6fb",
+                    padding: "12px 10px",
+                    fontWeight: 950,
+                    color: "#0b1224",
+                  }}
+                >
+                  <div></div>
+                  <div>Creato</div>
+                  <div>Storage path</div>
+                </div>
+
+                {filesLoading ? (
+                  <div style={{ padding: 16, fontWeight: 800 }}>Caricamento…</div>
+                ) : files.length === 0 ? (
+                  <div style={{ padding: 16, fontWeight: 800, color: "#64748b" }}>Nessun PDF salvato.</div>
+                ) : (
+                  files.map((f) => {
+                    const checked = selectedPaths.includes(f.storage_path);
+                    const last = lastCreatedStoragePath === f.storage_path;
+
+                    return (
+                      <div
+                        key={f.id}
+                        onClick={() => togglePath(f.storage_path)}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "56px 220px 1fr",
+                          padding: "12px 10px",
+                          borderTop: "1px solid rgba(15,23,42,0.08)",
+                          alignItems: "center",
+                          background: checked ? "rgba(99,102,241,0.06)" : "#fff",
+                          cursor: "pointer",
+                          outline: last ? "2px solid rgba(34,197,94,.45)" : "none",
+                          outlineOffset: "-2px",
+                        }}
+                        title="Clicca per selezionare"
+                      >
+                        <div style={{ display: "flex", justifyContent: "center" }}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => togglePath(f.storage_path)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+
+                        <div style={{ fontWeight: 900 }}>
+                          {fmtDateTime(f.created_at)}
+                          {last ? (
+                            <span style={{ marginLeft: 10, color: "#16a34a", fontWeight: 950 }}>NUOVO</span>
+                          ) : null}
+                        </div>
+
+                        <div style={{ fontWeight: 800, color: "#334155", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {f.storage_path}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---- styles
+const inputStyle = {
+  padding: "16px 18px",
+  borderRadius: 18,
+  border: "1px solid rgba(15,23,42,0.15)",
+  fontSize: 18,
+  fontWeight: 800,
+  outline: "none",
+  background: "#fff",
+};
+
+const miniInput = {
+  padding: "12px 12px",
+  borderRadius: 14,
+  border: "1px solid rgba(15,23,42,0.15)",
+  fontWeight: 800,
+  outline: "none",
+  background: "#fff",
+};
+
+const pill = {
+  padding: "10px 12px",
+  borderRadius: 999,
+  background: "#eef2ff",
+  border: "1px solid rgba(99,102,241,0.25)",
+  fontWeight: 900,
+  color: "#111827",
+};
+
+const dangerBox = {
+  marginTop: 14,
+  padding: 14,
+  borderRadius: 16,
+  background: "#fee2e2",
+  border: "1px solid #fecaca",
+  color: "#991b1b",
+  fontWeight: 900,
+};
+
+const okBox = {
+  marginTop: 14,
+  padding: 14,
+  borderRadius: 16,
+  background: "#dcfce7",
+  border: "1px solid #bbf7d0",
+  color: "#065f46",
+  fontWeight: 900,
+};
+
+const warnBox = {
+  marginTop: 14,
+  padding: 14,
+  borderRadius: 16,
+  background: "#ffedd5",
+  border: "1px solid #fed7aa",
+  color: "#7c2d12",
+  fontWeight: 900,
+};
+
+const hintBox = {
+  marginTop: 14,
+  padding: 14,
+  borderRadius: 16,
+  background: "#f8fafc",
+  border: "1px solid rgba(15,23,42,0.10)",
+  fontWeight: 900,
+  color: "#475569",
+};

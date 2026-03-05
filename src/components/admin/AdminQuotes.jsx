@@ -1,5 +1,9 @@
+// src/components/admin/AdminQuotes.jsx
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
+
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable"; // ✅ importante per Safari/React: import esplicito
 
 function formatDateTime(iso) {
   if (!iso) return "-";
@@ -17,68 +21,90 @@ function formatDateTime(iso) {
   }
 }
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+function escapeText(v) {
+  return String(v ?? "").replaceAll(/\s+/g, " ").trim();
 }
 
-function openPrintableWindow(title, html) {
-  const w = window.open("", "_blank"); // più compatibile
-  if (!w) {
-    alert("Popup bloccato: abilita i popup per generare il PDF.");
-    return;
-  }
+/**
+ * ✅ PDF blob Safari-friendly
+ */
+function buildRequestsPdfBlob(rows, title = "Richieste preventivo") {
+  const doc = new jsPDF({ orientation: "landscape" });
+  doc.setFontSize(14);
+  doc.text(title, 14, 14);
+
+  const body = rows.map((q) => [
+    formatDateTime(q.created_at),
+    `${q.nome || ""} ${q.cognome || ""}`.trim(),
+    q.telefono || "",
+    q.email || "",
+    escapeText(q.messaggio).slice(0, 220),
+  ]);
+
+  autoTable(doc, {
+    startY: 20,
+    head: [["Data/Ora", "Cliente", "Telefono", "Email", "Messaggio"]],
+    body,
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [11, 18, 36] },
+    columnStyles: {
+      0: { cellWidth: 38 },
+      1: { cellWidth: 52 },
+      2: { cellWidth: 32 },
+      3: { cellWidth: 60 },
+      4: { cellWidth: 110 },
+    },
+  });
+
+  const ab = doc.output("arraybuffer");
+  return new Blob([ab], { type: "application/pdf" });
+}
+
+/**
+ * ✅ Download robusto:
+ * - tenta <a download>
+ * - Safari fallback: apre il PDF nella stessa tab (niente popup bloccati)
+ */
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+
+  const ua = navigator.userAgent;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.rel = "noopener";
+  a.style.display = "none";
+  document.body.appendChild(a);
 
   try {
-    w.document.open();
-    w.document.write(`<!doctype html>
-<html lang="it">
-  <head>
-    <meta charset="utf-8" />
-    <title>${escapeHtml(title)}</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <style>
-      body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; padding: 24px; }
-      h1 { margin: 0 0 6px; font-size: 18px; }
-      .muted { color: #555; font-size: 12px; margin-bottom: 18px; }
-      table { width: 100%; border-collapse: collapse; font-size: 12px; }
-      th, td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
-      th { background: #f4f6f8; text-align: left; }
-      @media print { body { padding: 0; } .no-print { display: none !important; } }
-    </style>
-  </head>
-  <body>
-    ${html}
-    <script>
-      window.addEventListener('load', () => {
-        setTimeout(() => { try { window.focus(); window.print(); } catch(e) {} }, 300);
-      });
-    </script>
-  </body>
-</html>`);
-    w.document.close();
+    a.click();
   } catch (e) {
-    console.error("Errore PDF:", e);
-    w.document.body.innerHTML = `
-      <div style="font-family:system-ui;padding:24px">
-        <h2>Errore generazione PDF</h2>
-        <p>Apri la console del browser per dettagli.</p>
-        <pre style="white-space:pre-wrap;background:#f6f6f6;padding:12px;border-radius:8px">${escapeHtml(
-          e?.message || e
-        )}</pre>
-      </div>
-    `;
+    console.error("download click failed:", e);
   }
+
+  a.remove();
+
+  // Safari spesso ignora download: fallback senza popup
+  if (isSafari) {
+    setTimeout(() => {
+      try {
+        window.location.href = url;
+      } catch (e) {
+        console.error("Safari fallback failed:", e);
+      }
+    }, 250);
+  }
+
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
 export default function AdminQuotes() {
   const [quotes, setQuotes] = useState([]);
   const [quotesLoading, setQuotesLoading] = useState(false);
   const [quotesError, setQuotesError] = useState("");
+
   const [query, setQuery] = useState("");
   const [selectedQuoteIds, setSelectedQuoteIds] = useState(new Set());
 
@@ -99,6 +125,7 @@ export default function AdminQuotes() {
       fontWeight: 800,
       border: "1px solid rgba(15,23,42,0.12)",
       cursor: "pointer",
+      whiteSpace: "nowrap",
     };
     if (variant === "dark")
       return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
@@ -118,7 +145,7 @@ export default function AdminQuotes() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setQuotes(data || []);
+      setQuotes(Array.isArray(data) ? data : []);
       setSelectedQuoteIds(new Set());
     } catch (err) {
       setQuotesError(err?.message || "Errore caricamento richieste");
@@ -178,60 +205,22 @@ export default function AdminQuotes() {
     await loadQuotes();
   };
 
-  const exportQuotesToPDF = (onlySelected) => {
-    const rows = onlySelected
-      ? filteredQuotes.filter((q) => selectedQuoteIds.has(q.id))
-      : filteredQuotes;
+  const downloadPdfAll = () => {
+    if (!filteredQuotes.length) return;
+    const blob = buildRequestsPdfBlob(filteredQuotes, "Richieste preventivo (tutte)");
+    downloadBlob(blob, "richieste-clienti-tutte.pdf");
+  };
 
-    const now = new Date().toLocaleString("it-IT");
-
-    const html = `
-      <h1>Storico richieste preventivo</h1>
-      <div class="muted">Generato: ${escapeHtml(now)} — Totale righe: ${rows.length}</div>
-      <table>
-        <thead>
-          <tr>
-            <th>Data/Ora</th>
-            <th>Nome</th>
-            <th>Cognome</th>
-            <th>Telefono</th>
-            <th>Email</th>
-            <th>Messaggio</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows
-            .map(
-              (r) => `
-                <tr>
-                  <td>${escapeHtml(formatDateTime(r.created_at))}</td>
-                  <td>${escapeHtml(r.nome)}</td>
-                  <td>${escapeHtml(r.cognome)}</td>
-                  <td>${escapeHtml(r.telefono)}</td>
-                  <td>${escapeHtml(r.email)}</td>
-                  <td>${escapeHtml(r.messaggio)}</td>
-                </tr>
-              `
-            )
-            .join("")}
-        </tbody>
-      </table>
-      <div class="no-print muted" style="margin-top: 14px;">
-        Nella finestra di stampa seleziona “Salva come PDF”.
-      </div>
-    `;
-
-    openPrintableWindow(
-      onlySelected ? "PDF richieste (selezionate)" : "PDF richieste (tutte)",
-      html
-    );
+  const downloadPdfSelected = () => {
+    if (!selectedQuoteIds.size) return;
+    const rows = filteredQuotes.filter((q) => selectedQuoteIds.has(q.id));
+    const blob = buildRequestsPdfBlob(rows, `Richieste preventivo (selezionate: ${rows.length})`);
+    downloadBlob(blob, "richieste-clienti-selezionate.pdf");
   };
 
   return (
     <div style={cardStyle}>
-      <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
-        Storico richieste preventivo
-      </div>
+      <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>Storico richieste preventivo</div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 14, alignItems: "center" }}>
         <input
@@ -247,28 +236,34 @@ export default function AdminQuotes() {
             flex: "1 1 260px",
           }}
         />
+
         <button style={btn("ghost")} onClick={selectAllVisibleQuotes}>
           Seleziona tutti
         </button>
         <button style={btn("ghost")} onClick={deselectAllQuotes}>
           Deseleziona
         </button>
-        <button style={btn("dark")} onClick={() => exportQuotesToPDF(false)}>
-          PDF Tutte
+
+        <button style={btn("dark")} onClick={downloadPdfAll} disabled={!filteredQuotes.length}>
+          Scarica PDF Tutte
         </button>
+
         <button
           style={{
             ...btn("dark"),
             opacity: selectedQuoteIds.size ? 1 : 0.55,
             cursor: selectedQuoteIds.size ? "pointer" : "not-allowed",
           }}
-          onClick={() => selectedQuoteIds.size && exportQuotesToPDF(true)}
+          onClick={downloadPdfSelected}
+          disabled={!selectedQuoteIds.size}
         >
-          PDF Selez.
+          Scarica PDF Selez.
         </button>
+
         <button style={btn("ghost")} onClick={loadQuotes}>
           Aggiorna
         </button>
+
         <button
           style={{
             ...btn("softDanger"),
@@ -276,9 +271,11 @@ export default function AdminQuotes() {
             cursor: selectedQuoteIds.size ? "pointer" : "not-allowed",
           }}
           onClick={deleteSelectedQuotes}
+          disabled={!selectedQuoteIds.size}
         >
           Elimina selez.
         </button>
+
         <button style={btn("softDanger")} onClick={clearQuotesDB}>
           Pulisci DB
         </button>
@@ -304,7 +301,7 @@ export default function AdminQuotes() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "40px 160px 240px 170px 240px 150px",
+            gridTemplateColumns: "40px 170px 260px 170px 240px 150px",
             background: "#f3f6fb",
             padding: "12px 10px",
             fontWeight: 950,
@@ -331,7 +328,7 @@ export default function AdminQuotes() {
                 key={q.id}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "40px 160px 240px 170px 240px 150px",
+                  gridTemplateColumns: "40px 170px 260px 170px 240px 150px",
                   padding: "12px 10px",
                   borderTop: "1px solid rgba(15,23,42,0.08)",
                   alignItems: "start",

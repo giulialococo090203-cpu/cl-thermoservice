@@ -1,44 +1,100 @@
+// src/components/ServicesSection.jsx
+import { useEffect, useMemo, useState } from "react";
 import Reveal from "./Reveal";
-import { Wrench, Thermometer, ShieldCheck, Droplets, Snowflake, Zap } from "lucide-react";
+import { supabase } from "../supabaseClient"; // <- controlla: nel tuo progetto è in src/supabaseClient.js?
+import {
+  Wrench,
+  Thermometer,
+  ShieldCheck,
+  Droplets,
+  Snowflake,
+  Zap,
+  Flame,
+  Settings,
+  Hammer,
+  Fan,
+  Droplet,
+  Gauge,
+} from "lucide-react";
 
-const services = [
+const COMPANY_ID = "21cb4d5d-9566-4488-802c-a6b28488e486";
+
+// mappa icone da stringa DB -> componente
+const ICONS = {
+  Wrench,
+  Thermometer,
+  ShieldCheck,
+  Droplets,
+  Snowflake,
+  Zap,
+  Flame,
+  Settings,
+  Hammer,
+  Fan,
+  Droplet,
+  Gauge,
+};
+
+// fallback (se DB vuoto o RLS blocca)
+const FALLBACK = [
   {
-    key: "installazione",
-    icon: Zap,
+    id: "fallback-1",
     title: "Installazione caldaie",
-    desc: "Installazione di caldaie ad alta efficienza con configurazione corretta e collaudo.",
-    highlight: true,
-    bullets: ["Sopralluogo e configurazione", "Collaudo e messa in servizio", "Consigli su consumi e uso"],
+    description:
+      "Installazione di caldaie ad alta efficienza con configurazione corretta e collaudo.",
+    icon: "Zap",
+    pill: "Servizio richiesto",
+    sort_order: 1,
+    is_active: true,
   },
   {
-    key: "riparazione",
-    icon: Wrench,
+    id: "fallback-2",
     title: "Riparazione caldaie",
-    desc: "Interventi rapidi per guasti e blocchi. Diagnosi immediata e ripristino in sicurezza.",
+    description:
+      "Interventi rapidi per guasti e blocchi. Diagnosi immediata e ripristino in sicurezza.",
+    icon: "Wrench",
+    pill: null,
+    sort_order: 2,
+    is_active: true,
   },
   {
-    key: "manutenzione",
-    icon: Thermometer,
+    id: "fallback-3",
     title: "Manutenzione ordinaria",
-    desc: "Controlli periodici per efficienza, sicurezza e risparmio energetico.",
+    description: "Controlli periodici per efficienza, sicurezza e risparmio energetico.",
+    icon: "Thermometer",
+    pill: null,
+    sort_order: 3,
+    is_active: true,
   },
   {
-    key: "fumi",
-    icon: ShieldCheck,
+    id: "fallback-4",
     title: "Controllo fumi",
-    desc: "Analisi emissioni e supporto per verifiche previste dalla normativa.",
+    description:
+      "Analisi emissioni e supporto per verifiche previste dalla normativa.",
+    icon: "ShieldCheck",
+    pill: null,
+    sort_order: 4,
+    is_active: true,
   },
   {
-    key: "idraulica",
-    icon: Droplets,
+    id: "fallback-5",
     title: "Impianti idraulici",
-    desc: "Installazione e manutenzione di impianti idraulici civili e industriali.",
+    description:
+      "Installazione e manutenzione di impianti idraulici civili e industriali.",
+    icon: "Droplets",
+    pill: null,
+    sort_order: 5,
+    is_active: true,
   },
   {
-    key: "clima",
-    icon: Snowflake,
+    id: "fallback-6",
     title: "Climatizzazione",
-    desc: "Installazione e assistenza su impianti di climatizzazione e condizionamento.",
+    description:
+      "Installazione e assistenza su impianti di climatizzazione e condizionamento.",
+    icon: "Snowflake",
+    pill: null,
+    sort_order: 6,
+    is_active: true,
   },
 ];
 
@@ -63,14 +119,82 @@ function MiniChip({ children }) {
   );
 }
 
+function parseBulletsFromText(text) {
+  // ✨ trucco: se vuoi rendere “modificabili” anche i bullet,
+  // scrivili nella descrizione con righe tipo:
+  // - Sopralluogo ...
+  // - Collaudo ...
+  // - Consigli ...
+  const lines = String(text || "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const bullets = lines
+    .filter((l) => l.startsWith("- "))
+    .map((l) => l.replace(/^- /, "").trim())
+    .filter(Boolean);
+
+  // descrizione “pulita” senza bullet
+  const clean = lines.filter((l) => !l.startsWith("- ")).join("\n").trim();
+
+  return { clean, bullets };
+}
+
 export default function ServicesSection() {
-  const featured = services.find((s) => s.highlight);
-  const rest = services.filter((s) => !s.highlight);
+  const [rows, setRows] = useState([]);
+  const [err, setErr] = useState("");
+
+  const load = async () => {
+    setErr("");
+    try {
+      const { data, error } = await supabase
+        .from("services")
+        .select("id,title,description,icon,pill,sort_order,is_active")
+        .eq("company_id", COMPANY_ID)
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+
+      if (error) throw error;
+
+      const list = Array.isArray(data) ? data : [];
+      setRows(list.length ? list : FALLBACK);
+    } catch (e) {
+      // se RLS blocca o rete, mostro fallback così la UI non “sparisce”
+      setErr(e?.message || "Impossibile caricare i servizi.");
+      setRows(FALLBACK);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const featured = useMemo(() => {
+    if (!rows.length) return null;
+    return rows[0];
+  }, [rows]);
+
+  const rest = useMemo(() => rows.slice(1), [rows]);
+
+  // ✅ Chip “modificabili”: prendo fino a 3 pill non vuote dai servizi (in ordine)
+  // Se nessuna pill è compilata, uso i 3 default.
+  const chips = useMemo(() => {
+    const fromDb = rows.map((r) => (r.pill || "").trim()).filter(Boolean);
+    const uniq = Array.from(new Set(fromDb));
+    const picked = uniq.slice(0, 3);
+    if (picked.length) return picked;
+    return ["Interventi su appuntamento", "Trasparenza sui costi", "Ricambi e collaudo"];
+  }, [rows]);
+
+  if (!featured) return null;
+
+  const FeaturedIcon = ICONS[featured.icon] || Zap;
+  const featuredParsed = parseBulletsFromText(featured.description);
 
   return (
     <section id="servizi" className="section">
       <div className="container">
-        {/* Header meno “centrato uguale a tutto” */}
         <Reveal>
           <div
             style={{
@@ -92,17 +216,23 @@ export default function ServicesSection() {
                 Assistenza, installazione e manutenzione per impianti termici e idraulici. Lavoriamo con metodo,
                 puntualità e attenzione ai dettagli.
               </p>
+
+              {/* solo per debug (puoi togliere) */}
+              {err ? (
+                <div style={{ marginTop: 10, fontWeight: 800, color: "#b91c1c" }}>
+                  {err}
+                </div>
+              ) : null}
             </div>
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
-              <MiniChip>Interventi su appuntamento</MiniChip>
-              <MiniChip>Trasparenza sui costi</MiniChip>
-              <MiniChip>Ricambi e collaudo</MiniChip>
+              {chips.map((c) => (
+                <MiniChip key={c}>{c}</MiniChip>
+              ))}
             </div>
           </div>
         </Reveal>
 
-        {/* Layout “premium”: featured grande + griglia compatta */}
         <div style={{ marginTop: 28, display: "grid", gridTemplateColumns: "1.05fr .95fr", gap: 18 }}>
           {/* Featured */}
           <Reveal>
@@ -121,7 +251,7 @@ export default function ServicesSection() {
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14 }}>
                 <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                   <div className="iconBox" style={{ width: 62, height: 62, borderRadius: 20 }}>
-                    <featured.icon size={24} />
+                    <FeaturedIcon size={24} />
                   </div>
 
                   <div>
@@ -137,53 +267,58 @@ export default function ServicesSection() {
                       {featured.title}
                     </div>
 
-                    <div style={{ marginTop: 10, color: "rgba(15,23,42,.74)", fontWeight: 600, lineHeight: 1.65 }}>
-                      {featured.desc}
+                    <div style={{ marginTop: 10, color: "rgba(15,23,42,.74)", fontWeight: 600, lineHeight: 1.65, whiteSpace: "pre-wrap" }}>
+                      {featuredParsed.clean}
                     </div>
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 999,
-                    border: "1px solid rgba(229,57,53,.18)",
-                    background: "rgba(229,57,53,.08)",
-                    color: "rgba(15,23,42,.86)",
-                    fontWeight: 800,
-                    fontSize: 13,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Servizio richiesto
-                </div>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 18,
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
-                  gap: 10,
-                }}
-              >
-                {featured.bullets.map((b) => (
+                {featured.pill ? (
                   <div
-                    key={b}
                     style={{
-                      borderRadius: 18,
-                      border: "1px solid rgba(15,23,42,.08)",
-                      background: "rgba(255,255,255,.86)",
-                      padding: "12px 12px",
-                      fontWeight: 700,
-                      color: "rgba(15,23,42,.78)",
-                      lineHeight: 1.35,
+                      padding: "10px 12px",
+                      borderRadius: 999,
+                      border: "1px solid rgba(229,57,53,.18)",
+                      background: "rgba(229,57,53,.08)",
+                      color: "rgba(15,23,42,.86)",
+                      fontWeight: 800,
+                      fontSize: 13,
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    {b}
+                    {featured.pill}
                   </div>
-                ))}
+                ) : null}
               </div>
+
+              {/* Bullet opzionali: li prendo se nella descrizione metti righe "- ..." */}
+              {featuredParsed.bullets.length ? (
+                <div
+                  style={{
+                    marginTop: 18,
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: 10,
+                  }}
+                >
+                  {featuredParsed.bullets.slice(0, 6).map((b) => (
+                    <div
+                      key={b}
+                      style={{
+                        borderRadius: 18,
+                        border: "1px solid rgba(15,23,42,.08)",
+                        background: "rgba(255,255,255,.86)",
+                        padding: "12px 12px",
+                        fontWeight: 700,
+                        color: "rgba(15,23,42,.78)",
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {b}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
 
               <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <a
@@ -226,9 +361,11 @@ export default function ServicesSection() {
           {/* Rest */}
           <div style={{ display: "grid", gap: 12 }}>
             {rest.map((s) => {
-              const Icon = s.icon;
+              const Icon = ICONS[s.icon] || Wrench;
+              const parsed = parseBulletsFromText(s.description);
+
               return (
-                <Reveal key={s.key}>
+                <Reveal key={s.id}>
                   <div
                     className="card serviceCard cardHover"
                     style={{
@@ -242,9 +379,11 @@ export default function ServicesSection() {
                       <Icon size={22} />
                     </div>
                     <div>
-                      <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.01em" }}>{s.title}</div>
-                      <p style={{ margin: "8px 0 0", color: "rgba(15,23,42,.72)", fontWeight: 600, lineHeight: 1.6 }}>
-                        {s.desc}
+                      <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.01em" }}>
+                        {s.title}
+                      </div>
+                      <p style={{ margin: "8px 0 0", color: "rgba(15,23,42,.72)", fontWeight: 600, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                        {parsed.clean}
                       </p>
                     </div>
                   </div>

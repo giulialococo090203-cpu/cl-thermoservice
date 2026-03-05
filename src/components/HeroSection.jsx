@@ -1,7 +1,25 @@
+import { useEffect, useMemo, useState } from "react";
 import Reveal from "./Reveal";
+import BrandsSection from "./BrandsSection";
 import { ShieldCheck, Clock, PhoneCall, ArrowRight } from "lucide-react";
 
 export default function HeroSection() {
+  // ✅ elenco immagini (in /public)
+  const images = useMemo(
+    () => ["/hero-1.jpg", "/hero-2.jpg", "/hero-3.jpg", "/hero-4.jpg", "/hero-5.jpg"],
+    []
+  );
+
+  const [idx, setIdx] = useState(0);
+
+  // ✅ cambio automatico
+  useEffect(() => {
+    const t = setInterval(() => {
+      setIdx((p) => (p + 1) % images.length);
+    }, 5000); // ogni 5s
+    return () => clearInterval(t);
+  }, [images.length]);
+
   return (
     <section
       id="hero"
@@ -15,17 +33,26 @@ export default function HeroSection() {
         boxShadow: "0 24px 70px rgba(15,23,42,0.16)",
       }}
     >
-      {/* background image */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage: "url(/hero.jpg)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          filter: "saturate(1.05)",
-        }}
-      />
+      {/* ✅ slider immagini (crossfade) */}
+      <div style={{ position: "absolute", inset: 0 }}>
+        {images.map((src, i) => (
+          <div
+            key={src}
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage: `url(${src})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              filter: "saturate(1.05)",
+              opacity: i === idx ? 1 : 0,
+              transition: "opacity 900ms ease",
+              transform: i === idx ? "scale(1.02)" : "scale(1.00)",
+              transitionProperty: "opacity, transform",
+            }}
+          />
+        ))}
+      </div>
 
       {/* overlay */}
       <div
@@ -37,11 +64,12 @@ export default function HeroSection() {
         }}
       />
 
+      {/* ✅ contenuto HERO */}
       <div
         className="container"
         style={{
           position: "relative",
-          padding: "84px 22px",
+          padding: "84px 22px 240px", // ✅ spazio sotto per i marchi
           maxWidth: 1180,
         }}
       >
@@ -152,6 +180,30 @@ export default function HeroSection() {
           </div>
         </Reveal>
       </div>
+
+      {/* ✅ MARCHI dentro la hero (non spariscono più) */}
+      <div
+        style={{
+          position: "absolute",
+          left: 18,
+          right: 18,
+          bottom: 18,
+          zIndex: 5,
+        }}
+      >
+        <BrandsSection variant="hero" />
+      </div>
+
+      {/* piccoli fix responsive */}
+      <style>{`
+        @media (max-width: 820px){
+          #hero .container{ padding-bottom: 280px !important; }
+        }
+        @media (max-width: 560px){
+          #hero .container{ padding: 64px 16px 300px !important; }
+          #hero h1{ font-size: 40px !important; }
+        }
+      `}</style>
     </section>
   );
 }
