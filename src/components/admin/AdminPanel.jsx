@@ -9,6 +9,7 @@ import AdminFaq from "./AdminFaq"; // ✅ AGGIUNTO
 import AdminReviews from "./AdminReviews";
 import AdminWorks from "./AdminWorks";
 import AdminLinks from "./AdminLinks";
+import AdminBrands from "./AdminBrands";
 
 async function fetchUserRole(userId) {
   const { data, error } = await supabaseAdmin
@@ -257,6 +258,7 @@ export default function AdminPanel() {
             <AdminReviews />
             <AdminWorks />
             <AdminLinks />
+            <AdminBrands />
           </>
         )}
       </div>

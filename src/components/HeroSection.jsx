@@ -4,7 +4,6 @@ import BrandsSection from "./BrandsSection";
 import { ShieldCheck, Clock, PhoneCall, ArrowRight } from "lucide-react";
 
 export default function HeroSection() {
-  // ✅ elenco immagini (in /public)
   const images = useMemo(
     () => ["/hero-1.jpg", "/hero-2.jpg", "/hero-3.jpg", "/hero-4.jpg", "/hero-5.jpg"],
     []
@@ -12,11 +11,10 @@ export default function HeroSection() {
 
   const [idx, setIdx] = useState(0);
 
-  // ✅ cambio automatico
   useEffect(() => {
     const t = setInterval(() => {
       setIdx((p) => (p + 1) % images.length);
-    }, 5000); // ogni 5s
+    }, 5000);
     return () => clearInterval(t);
   }, [images.length]);
 
@@ -24,7 +22,7 @@ export default function HeroSection() {
     <section
       id="hero"
       style={{
-        minHeight: "78vh",
+        minHeight: "auto",
         position: "relative",
         borderRadius: 32,
         overflow: "hidden",
@@ -33,7 +31,7 @@ export default function HeroSection() {
         boxShadow: "0 24px 70px rgba(15,23,42,0.16)",
       }}
     >
-      {/* ✅ slider immagini (crossfade) */}
+      {/* slider immagini */}
       <div style={{ position: "absolute", inset: 0 }}>
         {images.map((src, i) => (
           <div
@@ -46,9 +44,8 @@ export default function HeroSection() {
               backgroundPosition: "center",
               filter: "saturate(1.05)",
               opacity: i === idx ? 1 : 0,
-              transition: "opacity 900ms ease",
+              transition: "opacity 900ms ease, transform 900ms ease",
               transform: i === idx ? "scale(1.02)" : "scale(1.00)",
-              transitionProperty: "opacity, transform",
             }}
           />
         ))}
@@ -64,13 +61,14 @@ export default function HeroSection() {
         }}
       />
 
-      {/* ✅ contenuto HERO */}
+      {/* contenuto hero */}
       <div
-        className="container"
+        className="container hero-main-content"
         style={{
           position: "relative",
-          padding: "84px 22px 240px", // ✅ spazio sotto per i marchi
+          padding: "84px 22px 430px",
           maxWidth: 1180,
+          zIndex: 2,
         }}
       >
         <Reveal>
@@ -122,7 +120,7 @@ export default function HeroSection() {
         </Reveal>
 
         <Reveal>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <div className="hero-cta-row" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <a
               className="btnAnim"
               href="tel:091406911"
@@ -181,8 +179,9 @@ export default function HeroSection() {
         </Reveal>
       </div>
 
-      {/* ✅ MARCHI dentro la hero (non spariscono più) */}
+      {/* fascia marchi */}
       <div
+        className="hero-brands-wrap"
         style={{
           position: "absolute",
           left: 18,
@@ -194,14 +193,57 @@ export default function HeroSection() {
         <BrandsSection variant="hero" />
       </div>
 
-      {/* piccoli fix responsive */}
       <style>{`
-        @media (max-width: 820px){
-          #hero .container{ padding-bottom: 280px !important; }
+        @media (max-width: 1100px){
+          #hero .hero-main-content{
+            padding: 74px 20px 460px !important;
+          }
+          #hero h1{
+            font-size: 48px !important;
+          }
         }
-        @media (max-width: 560px){
-          #hero .container{ padding: 64px 16px 300px !important; }
-          #hero h1{ font-size: 40px !important; }
+
+        @media (max-width: 820px){
+          #hero .hero-main-content{
+            padding: 64px 18px 520px !important;
+          }
+          #hero h1{
+            font-size: 42px !important;
+            max-width: 100% !important;
+          }
+        }
+
+        @media (max-width: 640px){
+          #hero{
+            border-radius: 24px !important;
+          }
+
+          #hero .hero-main-content{
+            padding: 56px 16px 0 !important;
+          }
+
+          #hero h1{
+            font-size: 34px !important;
+            line-height: 1.04 !important;
+          }
+
+          #hero p{
+            font-size: 16px !important;
+            line-height: 1.55 !important;
+          }
+
+          #hero .hero-cta-row{
+            gap: 10px !important;
+          }
+
+          #hero .hero-brands-wrap{
+            position: relative !important;
+            left: auto !important;
+            right: auto !important;
+            bottom: auto !important;
+            margin-top: 24px !important;
+            padding: 0 12px 14px !important;
+          }
         }
       `}</style>
     </section>

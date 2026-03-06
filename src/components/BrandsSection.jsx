@@ -1,22 +1,60 @@
 // src/components/BrandsSection.jsx
-export default function BrandsSection({ variant = "page" }) {
-  const brands = [
-    { name: "Chaffoteaux", logo: "/chaffoteaux.png" },
-    { name: "Bosch", logo: "/bosch.png" },
-    { name: "Toshiba", logo: "/toshiba.png" },
-    { name: "Maxa", logo: "/maxa.png" },
-    { name: "Innova", logo: "/innova.png" },
-    { name: "Cordivari", logo: "/cordivari.png" },
-  ];
+import { useEffect, useState } from "react";
+import { supabase } from "../supabaseClient";
+
+const DEFAULT_BRANDS = [
+  { name: "Chaffoteaux", logo: "/chaffoteaux.png" },
+  { name: "Bosch", logo: "/bosch.png" },
+  { name: "Toshiba", logo: "/toshiba.png" },
+  { name: "Maxa", logo: "/maxa.png" },
+  { name: "Innova", logo: "/innova.png" },
+  { name: "Cordivari", logo: "/cordivari.png" },
+];
+
+export default function BrandsSection({ variant = "hero" }) {
+  const [brands, setBrands] = useState(DEFAULT_BRANDS);
+
+  useEffect(() => {
+    let alive = true;
+
+    const loadBrands = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("brands_content")
+          .select("payload, updated_at")
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        const dbBrands = data?.payload?.brands;
+
+        if (alive && Array.isArray(dbBrands) && dbBrands.length > 0) {
+          setBrands(dbBrands);
+        } else if (alive) {
+          setBrands(DEFAULT_BRANDS);
+        }
+      } catch (e) {
+        console.error("Errore caricamento marchi:", e?.message || e);
+        if (alive) setBrands(DEFAULT_BRANDS);
+      }
+    };
+
+    loadBrands();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const isHero = variant === "hero";
 
-  // Wrapper: se è "hero" lo rendiamo una fascia integrata e più compatta
   const wrapperStyle = isHero
     ? {
         maxWidth: 1180,
         margin: "0 auto",
-        padding: "18px 22px 26px",
+        padding: 0,
       }
     : {
         maxWidth: 1180,
@@ -24,13 +62,12 @@ export default function BrandsSection({ variant = "page" }) {
         padding: "64px 18px",
       };
 
-  // Panel: in hero è trasparente/glass; in pagina è softPanel classico
   const panelStyle = isHero
     ? {
         borderRadius: 24,
-        padding: "18px 18px",
-        background: "rgba(255,255,255,0.06)",
-        border: "1px solid rgba(255,255,255,0.14)",
+        padding: "18px 18px 16px",
+        background: "rgba(255,255,255,0.08)",
+        border: "1px solid rgba(255,255,255,0.16)",
         boxShadow: "0 18px 60px rgba(0,0,0,0.22)",
         backdropFilter: "blur(10px)",
       }
@@ -40,30 +77,71 @@ export default function BrandsSection({ variant = "page" }) {
   const subColor = isHero ? "rgba(255,255,255,0.80)" : "#475569";
   const kickerColor = isHero ? "rgba(255,255,255,0.72)" : "#c62828";
 
-  // Dimensioni "giuste" (più grandi) per la versione hero
-  const cardW = isHero ? 170 : 160;
-  const cardH = isHero ? 86 : 78;
-  const logoMaxH = isHero ? 46 : 44;
-  const logoMaxW = isHero ? 130 : 128;
-
   const gridStyle = {
-    marginTop: isHero ? 14 : 34,
+    marginTop: isHero ? 16 : 34,
     display: "grid",
     gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
     gap: isHero ? 18 : 24,
-    alignItems: "center",
+    alignItems: "stretch",
   };
 
-  // Responsive semplice (mobile/tablet): 2-3 colonne
   const responsiveGrid = `
     @media (max-width: 980px) {
       .brandsGrid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
       }
     }
-    @media (max-width: 560px) {
+
+    @media (max-width: 640px) {
       .brandsGrid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 12px !important;
+      }
+
+      .brandsPanelHero {
+        padding: 16px 14px 14px !important;
+        border-radius: 22px !important;
+      }
+
+      .brandsTitleHero {
+        font-size: 18px !important;
+      }
+
+      .brandsSubtitleHero {
+        font-size: 15px !important;
+        line-height: 1.45 !important;
+      }
+
+      .brandsBadgeHero {
+        white-space: normal !important;
+        font-size: 14px !important;
+        line-height: 1.4 !important;
+      }
+
+      .brandCardHero {
+        min-height: 132px !important;
+        padding: 12px 10px !important;
+        gap: 8px !important;
+      }
+
+      .brandLogoWrapHero {
+        height: 40px !important;
+      }
+
+      .brandLogoHero {
+        max-height: 34px !important;
+        max-width: 92px !important;
+      }
+
+      .brandNameHero {
+        font-size: 13px !important;
+        line-height: 1.15 !important;
+      }
+
+      .brandsFooterHero {
+        margin-top: 14px !important;
+        font-size: 14px !important;
+        line-height: 1.4 !important;
       }
     }
   `;
@@ -73,8 +151,10 @@ export default function BrandsSection({ variant = "page" }) {
       <style>{responsiveGrid}</style>
 
       <div style={wrapperStyle}>
-        <div className={!isHero ? "container softPanel" : undefined} style={panelStyle}>
-          {/* Header */}
+        <div
+          className={!isHero ? "container softPanel" : "brandsPanelHero"}
+          style={panelStyle}
+        >
           <div
             style={{
               display: "flex",
@@ -84,7 +164,7 @@ export default function BrandsSection({ variant = "page" }) {
               flexWrap: "wrap",
             }}
           >
-            <div>
+            <div style={{ minWidth: 0 }}>
               <div
                 style={{
                   letterSpacing: "0.18em",
@@ -98,6 +178,7 @@ export default function BrandsSection({ variant = "page" }) {
               </div>
 
               <div
+                className={isHero ? "brandsTitleHero" : ""}
                 style={{
                   marginTop: 8,
                   fontSize: isHero ? 22 : 34,
@@ -110,6 +191,7 @@ export default function BrandsSection({ variant = "page" }) {
               </div>
 
               <div
+                className={isHero ? "brandsSubtitleHero" : ""}
                 style={{
                   marginTop: 8,
                   color: subColor,
@@ -123,13 +205,13 @@ export default function BrandsSection({ variant = "page" }) {
 
             {isHero ? (
               <div
+                className="brandsBadgeHero"
                 style={{
                   color: "rgba(255,255,255,0.75)",
                   fontWeight: 850,
                   display: "flex",
                   gap: 8,
                   alignItems: "center",
-                  whiteSpace: "nowrap",
                 }}
               >
                 Ricambi originali • Supporto certificato
@@ -137,16 +219,16 @@ export default function BrandsSection({ variant = "page" }) {
             ) : null}
           </div>
 
-          {/* Grid */}
           <div className="brandsGrid" style={gridStyle}>
-            {brands.map((brand) => (
+            {brands.map((brand, index) => (
               <div
-                key={brand.name}
+                key={`${brand.name}-${index}`}
+                className={isHero ? "brandCardHero" : ""}
                 style={{
                   borderRadius: 18,
                   width: "100%",
-                  minHeight: cardH,
-                  padding: "14px 12px",
+                  minHeight: isHero ? 160 : 78,
+                  padding: isHero ? "16px 12px" : "14px 12px",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -156,7 +238,9 @@ export default function BrandsSection({ variant = "page" }) {
                   border: isHero
                     ? "1px solid rgba(255,255,255,0.14)"
                     : "1px solid rgba(15,23,42,0.06)",
-                  boxShadow: isHero ? "0 10px 26px rgba(0,0,0,0.18)" : "0 10px 30px rgba(15,23,42,0.05)",
+                  boxShadow: isHero
+                    ? "0 10px 26px rgba(0,0,0,0.18)"
+                    : "0 10px 30px rgba(15,23,42,0.05)",
                   transition: "transform .18s ease, box-shadow .18s ease",
                   cursor: "default",
                 }}
@@ -174,20 +258,22 @@ export default function BrandsSection({ variant = "page" }) {
                 }}
               >
                 <div
+                  className={isHero ? "brandLogoWrapHero" : ""}
                   style={{
-                    width: cardW,
-                    height: isHero ? 52 : 50,
+                    width: "100%",
+                    height: isHero ? 54 : 50,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
                   <img
+                    className={isHero ? "brandLogoHero" : ""}
                     src={brand.logo}
                     alt={brand.name}
                     style={{
-                      maxHeight: logoMaxH,
-                      maxWidth: logoMaxW,
+                      maxHeight: isHero ? 42 : 44,
+                      maxWidth: isHero ? 120 : 128,
                       width: "auto",
                       height: "auto",
                       objectFit: "contain",
@@ -197,12 +283,14 @@ export default function BrandsSection({ variant = "page" }) {
                 </div>
 
                 <div
+                  className={isHero ? "brandNameHero" : ""}
                   style={{
                     fontWeight: 950,
                     textAlign: "center",
                     color: isHero ? "rgba(255,255,255,0.92)" : "#0b1220",
                     fontSize: 15,
-                    lineHeight: 1.1,
+                    lineHeight: 1.15,
+                    wordBreak: "break-word",
                   }}
                 >
                   {brand.name}
@@ -211,11 +299,11 @@ export default function BrandsSection({ variant = "page" }) {
             ))}
           </div>
 
-          {/* Footer micro-copy (solo hero) */}
           {isHero ? (
             <div
+              className="brandsFooterHero"
               style={{
-                marginTop: 14,
+                marginTop: 16,
                 color: "rgba(255,255,255,0.72)",
                 fontWeight: 800,
               }}
