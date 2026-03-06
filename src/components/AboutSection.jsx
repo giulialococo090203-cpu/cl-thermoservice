@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Reveal from "./Reveal";
-import { supabase } from "../supabaseClient"; // <-- verifica path: se il tuo supabaseClient è in src/supabaseClient
+import { supabase } from "../supabaseClient";
 
 import {
   CheckCircle2,
@@ -9,26 +9,15 @@ import {
   Shield,
 } from "lucide-react";
 
-// =====================
-// CONFIG
-// =====================
-
-// ✅ metti qui la tabella reale (quella con company_id + payload)
 const ABOUT_TABLE = "about_content";
-
-// ✅ la tua azienda è sempre CL Thermoservice
 const COMPANY_ID = "21cb4d5d-9566-4488-802c-a6b28488e486";
 
-// icone consentite per i “dati operativi”
 const STAT_ICONS = {
   Timer,
   BadgeCheck,
   Shield,
 };
 
-// =====================
-// DEFAULT (fallback)
-// =====================
 const DEFAULT_ABOUT = {
   kicker: "CHI SIAMO",
   title: "Affidabilità e competenza, dal primo intervento",
@@ -52,7 +41,6 @@ const DEFAULT_ABOUT = {
   statsValue: "10+",
   statsLabel: "Anni di esperienza sul territorio",
 
-  // cards a destra (con icona)
   statCards: [
     { icon: "Timer", value: "Interventi rapidi", label: "Gestione urgenze e appuntamenti" },
     { icon: "BadgeCheck", value: "Garanzia lavori", label: "Procedure e ricambi adeguati" },
@@ -66,6 +54,7 @@ const DEFAULT_ABOUT = {
 function Stat({ icon: Icon, value, label }) {
   return (
     <div
+      className="aboutStatCard"
       style={{
         borderRadius: 22,
         border: "1px solid rgba(255,255,255,0.14)",
@@ -91,11 +80,11 @@ function Stat({ icon: Icon, value, label }) {
         <Icon size={20} />
       </div>
 
-      <div>
+      <div style={{ minWidth: 0 }}>
         <div style={{ fontWeight: 950, fontSize: 22, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
           {value}
         </div>
-        <div style={{ opacity: 0.82, fontWeight: 650 }}>{label}</div>
+        <div style={{ opacity: 0.82, fontWeight: 650, lineHeight: 1.35 }}>{label}</div>
       </div>
     </div>
   );
@@ -125,11 +114,9 @@ export default function AboutSection() {
         if (!alive) return;
 
         if (payload && typeof payload === "object") {
-          // merge: payload sovrascrive i default
           setAbout((prev) => ({ ...prev, ...payload }));
         }
       } catch (e) {
-        // Se RLS blocca o tabella errata: resta ai default (non pagina bianca)
         console.warn("AboutSection: fetch fallito:", e?.message || e);
       } finally {
         if (alive) setLoaded(true);
@@ -150,7 +137,6 @@ export default function AboutSection() {
     const arr = about?.statCards;
     if (!Array.isArray(arr) || !arr.length) return DEFAULT_ABOUT.statCards;
 
-    // normalizza icone
     return arr.map((c) => ({
       icon: STAT_ICONS[c?.icon] ? c.icon : "Timer",
       value: String(c?.value || ""),
@@ -181,7 +167,6 @@ export default function AboutSection() {
                 {about.lead || DEFAULT_ABOUT.lead}
               </p>
 
-              {/* opzionale: piccola spia debug (puoi togliere) */}
               {!loaded ? (
                 <div style={{ marginTop: 8, color: "#64748b", fontWeight: 800, fontSize: 12 }}>
                   Carico contenuti…
@@ -191,6 +176,7 @@ export default function AboutSection() {
           </Reveal>
 
           <div
+            className="aboutMainGrid"
             style={{
               marginTop: 18,
               display: "grid",
@@ -213,15 +199,30 @@ export default function AboutSection() {
                     border: "1px solid rgba(15,23,42,.08)",
                   }}
                 >
-                  <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.01em" }}>
+                  <div
+                    style={{
+                      fontWeight: 900,
+                      fontSize: 18,
+                      letterSpacing: "-0.01em",
+                      lineHeight: 1.2,
+                    }}
+                  >
                     {about.leftTitle || DEFAULT_ABOUT.leftTitle}
                   </div>
 
-                  <p style={{ margin: "10px 0 0", color: "rgba(15,23,42,.72)", fontWeight: 600, lineHeight: 1.75 }}>
+                  <p
+                    style={{
+                      margin: "10px 0 0",
+                      color: "rgba(15,23,42,.72)",
+                      fontWeight: 600,
+                      lineHeight: 1.75,
+                    }}
+                  >
                     {about.leftBody || DEFAULT_ABOUT.leftBody}
                   </p>
 
                   <div
+                    className="aboutPointsGrid"
                     style={{
                       marginTop: 16,
                       display: "grid",
@@ -232,6 +233,7 @@ export default function AboutSection() {
                     {points.map((p) => (
                       <div
                         key={p}
+                        className="aboutPointCard"
                         style={{
                           display: "flex",
                           gap: 10,
@@ -240,6 +242,7 @@ export default function AboutSection() {
                           borderRadius: 18,
                           border: "1px solid rgba(15,23,42,.08)",
                           background: "rgba(255,255,255,.90)",
+                          minWidth: 0,
                         }}
                       >
                         <div
@@ -256,7 +259,16 @@ export default function AboutSection() {
                         >
                           <CheckCircle2 size={20} />
                         </div>
-                        <div style={{ fontWeight: 750, color: "rgba(15,23,42,.86)", lineHeight: 1.2 }}>{p}</div>
+                        <div
+                          style={{
+                            fontWeight: 750,
+                            color: "rgba(15,23,42,.86)",
+                            lineHeight: 1.2,
+                            minWidth: 0,
+                          }}
+                        >
+                          {p}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -267,6 +279,7 @@ export default function AboutSection() {
             {/* DESTRA */}
             <Reveal>
               <div
+                className="aboutStatsPanel"
                 style={{
                   borderRadius: 28,
                   padding: 22,
@@ -281,14 +294,24 @@ export default function AboutSection() {
                   {about.statsKicker || DEFAULT_ABOUT.statsKicker}
                 </div>
 
-                <div style={{ marginTop: 10, fontSize: 60, fontWeight: 950, lineHeight: 1, letterSpacing: "-0.03em" }}>
+                <div
+                  className="aboutStatsValue"
+                  style={{
+                    marginTop: 10,
+                    fontSize: 60,
+                    fontWeight: 950,
+                    lineHeight: 1,
+                    letterSpacing: "-0.03em",
+                  }}
+                >
                   {about.statsValue || DEFAULT_ABOUT.statsValue}
                 </div>
-                <div style={{ marginTop: 8, opacity: 0.9, fontWeight: 650 }}>
+
+                <div style={{ marginTop: 8, opacity: 0.9, fontWeight: 650, lineHeight: 1.35 }}>
                   {about.statsLabel || DEFAULT_ABOUT.statsLabel}
                 </div>
 
-                <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
+                <div className="aboutStatsCardsGrid" style={{ marginTop: 16, display: "grid", gap: 12 }}>
                   {statCards.map((c, idx) => {
                     const Icon = STAT_ICONS[c.icon] || Timer;
                     return <Stat key={idx} icon={Icon} value={c.value} label={c.label} />;
@@ -303,12 +326,51 @@ export default function AboutSection() {
           </div>
 
           <style>{`
+            #chi-siamo .aboutMainGrid {
+              width: 100%;
+            }
+
+            #chi-siamo .aboutPointsGrid {
+              width: 100%;
+            }
+
             @media (max-width: 980px){
-              #chi-siamo .card[style*="grid-template-columns"]{
+              #chi-siamo .aboutMainGrid{
                 grid-template-columns: 1fr !important;
               }
-              #chi-siamo div[style*="grid-template-columns: 1fr 1fr"]{
+            }
+
+            @media (max-width: 720px){
+              #chi-siamo .aboutPointsGrid{
                 grid-template-columns: 1fr !important;
+              }
+
+              #chi-siamo .aboutStatsValue{
+                font-size: 48px !important;
+              }
+            }
+
+            @media (max-width: 560px){
+              #chi-siamo .card{
+                border-radius: 22px !important;
+              }
+
+              #chi-siamo .aboutStatsPanel{
+                padding: 18px !important;
+                border-radius: 22px !important;
+              }
+
+              #chi-siamo .aboutPointCard{
+                padding: 10px !important;
+              }
+
+              #chi-siamo .aboutStatsValue{
+                font-size: 42px !important;
+              }
+
+              #chi-siamo .aboutStatCard{
+                padding: 14px !important;
+                border-radius: 18px !important;
               }
             }
           `}</style>

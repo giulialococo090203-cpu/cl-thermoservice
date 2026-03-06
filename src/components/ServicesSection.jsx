@@ -1,7 +1,6 @@
-// src/components/ServicesSection.jsx
 import { useEffect, useMemo, useState } from "react";
 import Reveal from "./Reveal";
-import { supabase } from "../supabaseClient"; // <- controlla: nel tuo progetto è in src/supabaseClient.js?
+import { supabase } from "../supabaseClient";
 import {
   Wrench,
   Thermometer,
@@ -19,7 +18,6 @@ import {
 
 const COMPANY_ID = "21cb4d5d-9566-4488-802c-a6b28488e486";
 
-// mappa icone da stringa DB -> componente
 const ICONS = {
   Wrench,
   Thermometer,
@@ -35,7 +33,6 @@ const ICONS = {
   Gauge,
 };
 
-// fallback (se DB vuoto o RLS blocca)
 const FALLBACK = [
   {
     id: "fallback-1",
@@ -120,11 +117,6 @@ function MiniChip({ children }) {
 }
 
 function parseBulletsFromText(text) {
-  // ✨ trucco: se vuoi rendere “modificabili” anche i bullet,
-  // scrivili nella descrizione con righe tipo:
-  // - Sopralluogo ...
-  // - Collaudo ...
-  // - Consigli ...
   const lines = String(text || "")
     .split("\n")
     .map((l) => l.trim())
@@ -135,7 +127,6 @@ function parseBulletsFromText(text) {
     .map((l) => l.replace(/^- /, "").trim())
     .filter(Boolean);
 
-  // descrizione “pulita” senza bullet
   const clean = lines.filter((l) => !l.startsWith("- ")).join("\n").trim();
 
   return { clean, bullets };
@@ -160,7 +151,6 @@ export default function ServicesSection() {
       const list = Array.isArray(data) ? data : [];
       setRows(list.length ? list : FALLBACK);
     } catch (e) {
-      // se RLS blocca o rete, mostro fallback così la UI non “sparisce”
       setErr(e?.message || "Impossibile caricare i servizi.");
       setRows(FALLBACK);
     }
@@ -177,8 +167,6 @@ export default function ServicesSection() {
 
   const rest = useMemo(() => rows.slice(1), [rows]);
 
-  // ✅ Chip “modificabili”: prendo fino a 3 pill non vuote dai servizi (in ordine)
-  // Se nessuna pill è compilata, uso i 3 default.
   const chips = useMemo(() => {
     const fromDb = rows.map((r) => (r.pill || "").trim()).filter(Boolean);
     const uniq = Array.from(new Set(fromDb));
@@ -197,6 +185,7 @@ export default function ServicesSection() {
       <div className="container">
         <Reveal>
           <div
+            className="servicesHeaderTop"
             style={{
               display: "flex",
               justifyContent: "space-between",
@@ -217,7 +206,6 @@ export default function ServicesSection() {
                 puntualità e attenzione ai dettagli.
               </p>
 
-              {/* solo per debug (puoi togliere) */}
               {err ? (
                 <div style={{ marginTop: 10, fontWeight: 800, color: "#b91c1c" }}>
                   {err}
@@ -233,11 +221,19 @@ export default function ServicesSection() {
           </div>
         </Reveal>
 
-        <div style={{ marginTop: 28, display: "grid", gridTemplateColumns: "1.05fr .95fr", gap: 18 }}>
+        <div
+          className="servicesMainGrid"
+          style={{
+            marginTop: 28,
+            display: "grid",
+            gridTemplateColumns: "1.05fr .95fr",
+            gap: 18,
+          }}
+        >
           {/* Featured */}
           <Reveal>
             <div
-              className="card cardHover"
+              className="card cardHover servicesFeaturedCard"
               style={{
                 padding: 22,
                 borderRadius: 26,
@@ -248,13 +244,21 @@ export default function ServicesSection() {
                 minHeight: 260,
               }}
             >
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14 }}>
-                <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+              <div
+                className="servicesFeaturedTop"
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  gap: 14,
+                }}
+              >
+                <div style={{ display: "flex", gap: 14, alignItems: "flex-start", minWidth: 0 }}>
                   <div className="iconBox" style={{ width: 62, height: 62, borderRadius: 20 }}>
                     <FeaturedIcon size={24} />
                   </div>
 
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <div
                       style={{
                         fontWeight: 900,
@@ -267,7 +271,15 @@ export default function ServicesSection() {
                       {featured.title}
                     </div>
 
-                    <div style={{ marginTop: 10, color: "rgba(15,23,42,.74)", fontWeight: 600, lineHeight: 1.65, whiteSpace: "pre-wrap" }}>
+                    <div
+                      style={{
+                        marginTop: 10,
+                        color: "rgba(15,23,42,.74)",
+                        fontWeight: 600,
+                        lineHeight: 1.65,
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
                       {featuredParsed.clean}
                     </div>
                   </div>
@@ -275,6 +287,7 @@ export default function ServicesSection() {
 
                 {featured.pill ? (
                   <div
+                    className="servicesFeaturedPill"
                     style={{
                       padding: "10px 12px",
                       borderRadius: 999,
@@ -284,6 +297,7 @@ export default function ServicesSection() {
                       fontWeight: 800,
                       fontSize: 13,
                       whiteSpace: "nowrap",
+                      flex: "0 0 auto",
                     }}
                   >
                     {featured.pill}
@@ -291,9 +305,9 @@ export default function ServicesSection() {
                 ) : null}
               </div>
 
-              {/* Bullet opzionali: li prendo se nella descrizione metti righe "- ..." */}
               {featuredParsed.bullets.length ? (
                 <div
+                  className="servicesBulletsGrid"
                   style={{
                     marginTop: 18,
                     display: "grid",
@@ -359,7 +373,7 @@ export default function ServicesSection() {
           </Reveal>
 
           {/* Rest */}
-          <div style={{ display: "grid", gap: 12 }}>
+          <div className="servicesRestGrid" style={{ display: "grid", gap: 12 }}>
             {rest.map((s) => {
               const Icon = ICONS[s.icon] || Wrench;
               const parsed = parseBulletsFromText(s.description);
@@ -378,11 +392,19 @@ export default function ServicesSection() {
                     <div className="iconBox" style={{ width: 54, height: 54, borderRadius: 18 }}>
                       <Icon size={22} />
                     </div>
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.01em" }}>
                         {s.title}
                       </div>
-                      <p style={{ margin: "8px 0 0", color: "rgba(15,23,42,.72)", fontWeight: 600, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                      <p
+                        style={{
+                          margin: "8px 0 0",
+                          color: "rgba(15,23,42,.72)",
+                          fontWeight: 600,
+                          lineHeight: 1.6,
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
                         {parsed.clean}
                       </p>
                     </div>
@@ -395,13 +417,22 @@ export default function ServicesSection() {
 
         <style>{`
           @media (max-width: 980px){
-            #servizi > div > div:nth-of-type(2){
+            #servizi .servicesMainGrid{
               grid-template-columns: 1fr !important;
             }
           }
+
           @media (max-width: 720px){
-            #servizi div[style*="grid-template-columns: 1fr 1fr 1fr"]{
+            #servizi .servicesBulletsGrid{
               grid-template-columns: 1fr !important;
+            }
+
+            #servizi .servicesFeaturedTop{
+              flex-direction: column !important;
+            }
+
+            #servizi .servicesFeaturedPill{
+              white-space: normal !important;
             }
           }
         `}</style>
