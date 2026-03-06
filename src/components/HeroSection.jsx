@@ -22,7 +22,6 @@ export default function HeroSection() {
     <section
       id="hero"
       style={{
-        minHeight: "auto",
         position: "relative",
         borderRadius: 32,
         overflow: "hidden",
@@ -66,9 +65,9 @@ export default function HeroSection() {
         className="container hero-main-content"
         style={{
           position: "relative",
-          padding: "84px 22px 430px",
-          maxWidth: 1180,
           zIndex: 2,
+          maxWidth: 1180,
+          padding: "84px 22px 140px",
         }}
       >
         <Reveal>
@@ -95,7 +94,7 @@ export default function HeroSection() {
               letterSpacing: "-0.03em",
               margin: "0 0 16px",
               fontWeight: 1000,
-              maxWidth: 760,
+              maxWidth: 860,
             }}
           >
             Assistenza caldaie
@@ -109,13 +108,14 @@ export default function HeroSection() {
             style={{
               color: "rgba(255,255,255,0.82)",
               fontSize: 18,
-              maxWidth: 720,
+              maxWidth: 860,
               margin: "0 0 26px",
               fontWeight: 650,
               lineHeight: 1.6,
             }}
           >
-            Installazione, manutenzione e riparazione di caldaie e impianti termici. Interventi rapidi con tecnici qualificati.
+            Installazione, manutenzione e riparazione di caldaie e impianti termici.
+            Interventi rapidi con tecnici qualificati.
           </p>
         </Reveal>
 
@@ -183,11 +183,10 @@ export default function HeroSection() {
       <div
         className="hero-brands-wrap"
         style={{
-          position: "absolute",
-          left: 18,
-          right: 18,
-          bottom: 18,
-          zIndex: 5,
+          position: "relative",
+          marginTop: -140,
+          padding: "0 18px 24px",
+          zIndex: 3,
         }}
       >
         <BrandsSection variant="hero" />
@@ -195,9 +194,6 @@ export default function HeroSection() {
 
       <style>{`
         @media (max-width: 1100px){
-          #hero .hero-main-content{
-            padding: 74px 20px 460px !important;
-          }
           #hero h1{
             font-size: 48px !important;
           }
@@ -205,8 +201,9 @@ export default function HeroSection() {
 
         @media (max-width: 820px){
           #hero .hero-main-content{
-            padding: 64px 18px 520px !important;
+            padding: 64px 18px 120px !important;
           }
+
           #hero h1{
             font-size: 42px !important;
             max-width: 100% !important;
@@ -216,10 +213,11 @@ export default function HeroSection() {
         @media (max-width: 640px){
           #hero{
             border-radius: 24px !important;
+            margin-top: 16px !important;
           }
 
           #hero .hero-main-content{
-            padding: 56px 16px 0 !important;
+            padding: 56px 16px 80px !important;
           }
 
           #hero h1{
@@ -230,19 +228,22 @@ export default function HeroSection() {
           #hero p{
             font-size: 16px !important;
             line-height: 1.55 !important;
-          }
-
-          #hero .hero-cta-row{
-            gap: 10px !important;
+            max-width: 100% !important;
           }
 
           #hero .hero-brands-wrap{
-            position: relative !important;
-            left: auto !important;
-            right: auto !important;
-            bottom: auto !important;
-            margin-top: 24px !important;
+            margin-top: -70px !important;
             padding: 0 12px 14px !important;
+          }
+        }
+
+        @media (max-width: 420px){
+          #hero h1{
+            font-size: 30px !important;
+          }
+
+          #hero .hero-brands-wrap{
+            margin-top: -40px !important;
           }
         }
       `}</style>

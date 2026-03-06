@@ -86,7 +86,7 @@ export default function BrandsSection({ variant = "hero" }) {
   };
 
   const responsiveGrid = `
-    @media (max-width: 980px) {
+    @media (max-width: 1100px) {
       .brandsGrid {
         grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
       }
@@ -105,6 +105,7 @@ export default function BrandsSection({ variant = "hero" }) {
 
       .brandsTitleHero {
         font-size: 18px !important;
+        line-height: 1.15 !important;
       }
 
       .brandsSubtitleHero {
@@ -119,18 +120,18 @@ export default function BrandsSection({ variant = "hero" }) {
       }
 
       .brandCardHero {
-        min-height: 132px !important;
+        min-height: 138px !important;
         padding: 12px 10px !important;
         gap: 8px !important;
       }
 
       .brandLogoWrapHero {
-        height: 40px !important;
+        height: 44px !important;
       }
 
       .brandLogoHero {
         max-height: 34px !important;
-        max-width: 92px !important;
+        max-width: 96px !important;
       }
 
       .brandNameHero {
@@ -142,6 +143,30 @@ export default function BrandsSection({ variant = "hero" }) {
         margin-top: 14px !important;
         font-size: 14px !important;
         line-height: 1.4 !important;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .brandsGrid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .brandCardHero {
+        min-height: 120px !important;
+        padding: 10px !important;
+      }
+
+      .brandLogoWrapHero {
+        height: 40px !important;
+      }
+
+      .brandLogoHero {
+        max-height: 30px !important;
+        max-width: 88px !important;
+      }
+
+      .brandNameHero {
+        font-size: 12px !important;
       }
     }
   `;
@@ -227,7 +252,7 @@ export default function BrandsSection({ variant = "hero" }) {
                 style={{
                   borderRadius: 18,
                   width: "100%",
-                  minHeight: isHero ? 160 : 78,
+                  minHeight: isHero ? 168 : 78,
                   padding: isHero ? "16px 12px" : "14px 12px",
                   display: "flex",
                   flexDirection: "column",
@@ -261,7 +286,7 @@ export default function BrandsSection({ variant = "hero" }) {
                   className={isHero ? "brandLogoWrapHero" : ""}
                   style={{
                     width: "100%",
-                    height: isHero ? 54 : 50,
+                    height: isHero ? 56 : 50,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
