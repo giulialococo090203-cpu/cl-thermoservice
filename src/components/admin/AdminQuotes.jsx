@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
 
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable"; // ✅ importante per Safari/React: import esplicito
+import autoTable from "jspdf-autotable";
 
 function formatDateTime(iso) {
   if (!iso) return "-";
@@ -25,9 +25,6 @@ function escapeText(v) {
   return String(v ?? "").replaceAll(/\s+/g, " ").trim();
 }
 
-/**
- * ✅ PDF blob Safari-friendly
- */
 function buildRequestsPdfBlob(rows, title = "Richieste preventivo") {
   const doc = new jsPDF({ orientation: "landscape" });
   doc.setFontSize(14);
@@ -60,11 +57,6 @@ function buildRequestsPdfBlob(rows, title = "Richieste preventivo") {
   return new Blob([ab], { type: "application/pdf" });
 }
 
-/**
- * ✅ Download robusto:
- * - tenta <a download>
- * - Safari fallback: apre il PDF nella stessa tab (niente popup bloccati)
- */
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
 
@@ -86,7 +78,6 @@ function downloadBlob(blob, filename) {
 
   a.remove();
 
-  // Safari spesso ignora download: fallback senza popup
   if (isSafari) {
     setTimeout(() => {
       try {
@@ -127,11 +118,17 @@ export default function AdminQuotes() {
       cursor: "pointer",
       whiteSpace: "nowrap",
     };
-    if (variant === "dark")
-      return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
-    if (variant === "ghost") return { ...base, background: "#fff", color: "#0b1224" };
-    if (variant === "softDanger")
-      return { ...base, background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" };
+    if (variant === "dark") {
+      return {
+        ...base,
+        background: "#0b1224",
+        color: "#fff",
+        border: "1px solid #0b1224",
+      };
+    }
+    if (variant === "ghost") {
+      return { ...base, background: "#fff", color: "#0b1224" };
+    }
     return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
   };
 
@@ -156,12 +153,27 @@ export default function AdminQuotes() {
 
   useEffect(() => {
     loadQuotes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    const channel = supabase
+      .channel("admin-quotes-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "quotes" },
+        async () => {
+          await loadQuotes();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const filteredQuotes = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return quotes;
+
     return quotes.filter((r) => {
       const s = `${r.nome || ""} ${r.cognome || ""} ${r.telefono || ""} ${r.email || ""} ${
         r.messaggio || ""
@@ -179,30 +191,12 @@ export default function AdminQuotes() {
     });
   };
 
-  const selectAllVisibleQuotes = () => setSelectedQuoteIds(new Set(filteredQuotes.map((q) => q.id)));
-  const deselectAllQuotes = () => setSelectedQuoteIds(new Set());
-
-  const deleteOneQuote = async (id) => {
-    if (!confirm("Eliminare questa richiesta?")) return;
-    const { error } = await supabase.from("quotes").delete().eq("id", id);
-    if (error) return alert("Errore eliminazione: " + error.message);
-    await loadQuotes();
+  const selectAllVisibleQuotes = () => {
+    setSelectedQuoteIds(new Set(filteredQuotes.map((q) => q.id)));
   };
 
-  const deleteSelectedQuotes = async () => {
-    if (selectedQuoteIds.size === 0) return;
-    if (!confirm(`Eliminare ${selectedQuoteIds.size} richieste selezionate?`)) return;
-    const ids = Array.from(selectedQuoteIds);
-    const { error } = await supabase.from("quotes").delete().in("id", ids);
-    if (error) return alert("Errore eliminazione: " + error.message);
-    await loadQuotes();
-  };
-
-  const clearQuotesDB = async () => {
-    if (!confirm("ATTENZIONE: vuoi cancellare TUTTE le richieste dal database?")) return;
-    const { error } = await supabase.from("quotes").delete().neq("id", -1);
-    if (error) return alert("Errore pulizia: " + error.message);
-    await loadQuotes();
+  const deselectAllQuotes = () => {
+    setSelectedQuoteIds(new Set());
   };
 
   const downloadPdfAll = () => {
@@ -220,7 +214,9 @@ export default function AdminQuotes() {
 
   return (
     <div style={cardStyle}>
-      <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>Storico richieste preventivo</div>
+      <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
+        Storico richieste preventivo
+      </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 14, alignItems: "center" }}>
         <input
@@ -240,6 +236,7 @@ export default function AdminQuotes() {
         <button style={btn("ghost")} onClick={selectAllVisibleQuotes}>
           Seleziona tutti
         </button>
+
         <button style={btn("ghost")} onClick={deselectAllQuotes}>
           Deseleziona
         </button>
@@ -263,22 +260,6 @@ export default function AdminQuotes() {
         <button style={btn("ghost")} onClick={loadQuotes}>
           Aggiorna
         </button>
-
-        <button
-          style={{
-            ...btn("softDanger"),
-            opacity: selectedQuoteIds.size ? 1 : 0.55,
-            cursor: selectedQuoteIds.size ? "pointer" : "not-allowed",
-          }}
-          onClick={deleteSelectedQuotes}
-          disabled={!selectedQuoteIds.size}
-        >
-          Elimina selez.
-        </button>
-
-        <button style={btn("softDanger")} onClick={clearQuotesDB}>
-          Pulisci DB
-        </button>
       </div>
 
       {quotesError && (
@@ -301,7 +282,7 @@ export default function AdminQuotes() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "40px 170px 260px 170px 240px 150px",
+            gridTemplateColumns: "40px 170px 260px 170px 240px",
             background: "#f3f6fb",
             padding: "12px 10px",
             fontWeight: 950,
@@ -313,22 +294,24 @@ export default function AdminQuotes() {
           <div>Cliente</div>
           <div>Telefono</div>
           <div>Email</div>
-          <div></div>
         </div>
 
         {quotesLoading ? (
           <div style={{ padding: 16, fontWeight: 800 }}>Caricamento…</div>
         ) : filteredQuotes.length === 0 ? (
-          <div style={{ padding: 16, fontWeight: 800, color: "#64748b" }}>Nessuna richiesta presente.</div>
+          <div style={{ padding: 16, fontWeight: 800, color: "#64748b" }}>
+            Nessuna richiesta presente.
+          </div>
         ) : (
           filteredQuotes.map((q) => {
             const checked = selectedQuoteIds.has(q.id);
+
             return (
               <div
                 key={q.id}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "40px 170px 260px 170px 240px 150px",
+                  gridTemplateColumns: "40px 170px 260px 170px 240px",
                   padding: "12px 10px",
                   borderTop: "1px solid rgba(15,23,42,0.08)",
                   alignItems: "start",
@@ -336,7 +319,11 @@ export default function AdminQuotes() {
                 }}
               >
                 <div>
-                  <input type="checkbox" checked={checked} onChange={() => toggleQuoteSelection(q.id)} />
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleQuoteSelection(q.id)}
+                  />
                 </div>
 
                 <div style={{ fontWeight: 900 }}>{formatDateTime(q.created_at)}</div>
@@ -362,12 +349,6 @@ export default function AdminQuotes() {
                   ) : (
                     "-"
                   )}
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <button style={btn("ghost")} onClick={() => deleteOneQuote(q.id)}>
-                    Elimina
-                  </button>
                 </div>
               </div>
             );

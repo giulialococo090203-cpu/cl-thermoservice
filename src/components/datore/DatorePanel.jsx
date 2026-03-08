@@ -2,7 +2,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../supabaseClient";
 
-// ✅ NEW: componente archivio preventivi
 import QuoteArchiveManager from "./QuoteArchiveManager";
 
 import {
@@ -22,6 +21,7 @@ import { buildRequestsPdfBlob, buildQuotePdfBlob, fmtDateTime, fmtEuro } from ".
 import { computeTotals, validateAndCleanItems, sanitizeText, uid } from "./validators";
 
 import RequestsManager from "./RequestsManager";
+
 export default function DatorePanel() {
   // AUTH
   const [session, setSession] = useState(null);
@@ -31,7 +31,7 @@ export default function DatorePanel() {
   // ROLE + COMPANY
   const [roleLoading, setRoleLoading] = useState(false);
   const [roleError, setRoleError] = useState("");
-  const [role, setRole] = useState(null); // "admin" | "employer" | null
+  const [role, setRole] = useState(null);
   const [companyId, setCompanyId] = useState(null);
   const [company, setCompany] = useState(null);
 
@@ -39,23 +39,27 @@ export default function DatorePanel() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // DATA: richieste (quotes)
+  // DATA: richieste
   const [requests, setRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState("");
 
-  // DATA: pdf salvati (quote_files)
+  // ✅ realtime notice
+  const [liveNotice, setLiveNotice] = useState("");
+  const firstRealtimeLoadRef = useRef(true);
+
+  // DATA: pdf salvati
   const [files, setFiles] = useState([]);
   const [filesLoading, setFilesLoading] = useState(false);
   const [filesError, setFilesError] = useState("");
 
   // MULTI-SELEZIONE PDF nello storico
-  const [selectedPaths, setSelectedPaths] = useState([]); // array di storage_path
+  const [selectedPaths, setSelectedPaths] = useState([]);
   const [lastCreatedStoragePath, setLastCreatedStoragePath] = useState(null);
 
   // CREA PREVENTIVO
-  const [activeRequest, setActiveRequest] = useState(null); // richiesta selezionata (può essere null)
-  const [manualQuote, setManualQuote] = useState(false); // ✅ preventivo anche senza richiesta
+  const [activeRequest, setActiveRequest] = useState(null);
+  const [manualQuote, setManualQuote] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
   const [createOk, setCreateOk] = useState("");
@@ -76,7 +80,6 @@ export default function DatorePanel() {
   const containerRef = useRef(null);
   const filesSectionRef = useRef(null);
 
-  // ---------- UI styles
   const cardStyle = {
     background: "rgba(255,255,255,0.85)",
     borderRadius: 28,
@@ -94,22 +97,27 @@ export default function DatorePanel() {
       cursor: "pointer",
       whiteSpace: "nowrap",
     };
-    if (variant === "dark")
+    if (variant === "dark") {
       return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
-    if (variant === "ghost") return { ...base, background: "#fff", color: "#0b1224" };
-    if (variant === "soft")
+    }
+    if (variant === "ghost") {
+      return { ...base, background: "#fff", color: "#0b1224" };
+    }
+    if (variant === "soft") {
       return {
         ...base,
         background: "#eef2ff",
         color: "#111827",
         border: "1px solid rgba(99,102,241,.25)",
       };
-    if (variant === "danger")
+    }
+    if (variant === "danger") {
       return { ...base, background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" };
+    }
     return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
   };
 
-  // ---------- SESSION INIT
+  // SESSION INIT
   useEffect(() => {
     let sub;
 
@@ -131,7 +139,7 @@ export default function DatorePanel() {
     };
   }, []);
 
-  // ---------- LOAD ROLE + COMPANY
+  // LOAD ROLE + COMPANY
   useEffect(() => {
     let alive = true;
 
@@ -176,7 +184,7 @@ export default function DatorePanel() {
     };
   }, [session?.user?.id]);
 
-  // ---------- LOAD DATA
+  // LOAD DATA
   const loadRequests = async () => {
     if (!companyId) return;
     setRequestsError("");
@@ -199,8 +207,6 @@ export default function DatorePanel() {
     try {
       const rows = await listQuoteFiles(companyId);
       setFiles(rows);
-
-      // mantieni selezione solo su path ancora esistenti
       setSelectedPaths((prev) => prev.filter((p) => rows.some((r) => r.storage_path === p)));
     } catch (e) {
       console.error(e);
@@ -221,7 +227,59 @@ export default function DatorePanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id, roleLoading, roleError, role, companyId]);
 
-  // ---------- LOGIN/LOGOUT
+  // ✅ REALTIME richieste
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    if (roleLoading || roleError) return;
+    if (!isEmployer) return;
+    if (!companyId) return;
+
+    firstRealtimeLoadRef.current = true;
+
+    const channel = supabase
+      .channel(`datore-quotes-${companyId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "quotes",
+        },
+        async (payload) => {
+          const rowCompanyId = payload?.new?.company_id ?? payload?.old?.company_id ?? null;
+          if (rowCompanyId !== companyId) return;
+
+          await loadRequests();
+
+          if (firstRealtimeLoadRef.current) {
+            firstRealtimeLoadRef.current = false;
+            return;
+          }
+
+          if (payload.eventType === "INSERT") {
+            setLiveNotice("📩 Nuova richiesta ricevuta in tempo reale.");
+            setTimeout(() => setLiveNotice(""), 3500);
+          }
+
+          if (payload.eventType === "DELETE") {
+            setLiveNotice("🗑️ Richiesta eliminata.");
+            setTimeout(() => setLiveNotice(""), 2500);
+          }
+
+          if (payload.eventType === "UPDATE") {
+            setLiveNotice("✏️ Richiesta aggiornata.");
+            setTimeout(() => setLiveNotice(""), 2500);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id, roleLoading, roleError, isEmployer, companyId]);
+
+  // LOGIN/LOGOUT
   const handleLogin = async (e) => {
     e.preventDefault();
     setAuthError("");
@@ -253,9 +311,10 @@ export default function DatorePanel() {
     setManualQuote(false);
     setSelectedPaths([]);
     setLastCreatedStoragePath(null);
+    setLiveNotice("");
   };
 
-  // ---------- PREVENTIVO: seleziona richiesta
+  // PREVENTIVO: seleziona richiesta
   const pickRequest = (q) => {
     setManualQuote(false);
     setActiveRequest(q);
@@ -275,7 +334,7 @@ export default function DatorePanel() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // ✅ PREVENTIVO MANUALE (senza richiesta)
+  // PREVENTIVO MANUALE
   const startManualQuote = () => {
     setActiveRequest(null);
     setManualQuote(true);
@@ -294,7 +353,7 @@ export default function DatorePanel() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // ---------- items helpers
+  // items helpers
   const updateItem = (idx, patch) => {
     setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   };
@@ -310,7 +369,6 @@ export default function DatorePanel() {
     setItems((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  // Totali su items “puliti”
   const cleanedForTotals = useMemo(() => {
     const v = validateAndCleanItems(items);
     return v.ok ? v.items : [];
@@ -318,7 +376,7 @@ export default function DatorePanel() {
 
   const totals = useMemo(() => computeTotals(cleanedForTotals), [cleanedForTotals]);
 
-  // ---------- Scarica PDF richieste (clienti)
+  // Scarica PDF richieste
   const handleDownloadRequestsPdf = () => {
     const blob = buildRequestsPdfBlob(requests, `${company?.name || "Azienda"} — Richieste preventivo`);
     const url = URL.createObjectURL(blob);
@@ -331,7 +389,7 @@ export default function DatorePanel() {
     URL.revokeObjectURL(url);
   };
 
-  // ---------- Download PDF salvato (NO popup): signedUrl -> fetch(blob) -> download
+  // Download PDF salvato
   const downloadSavedPdf = async (storagePath) => {
     const signed = await createSignedUrl(storagePath, 300);
     const signedUrl =
@@ -348,7 +406,6 @@ export default function DatorePanel() {
 
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
-
     const fileName = storagePath.split("/").pop() || "preventivo.pdf";
 
     const a = document.createElement("a");
@@ -365,9 +422,7 @@ export default function DatorePanel() {
     if (!selectedPaths.length) return;
     try {
       for (let i = 0; i < selectedPaths.length; i++) {
-        // eslint-disable-next-line no-await-in-loop
         await downloadSavedPdf(selectedPaths[i]);
-        // eslint-disable-next-line no-await-in-loop
         await new Promise((r) => setTimeout(r, 250));
       }
     } catch (e) {
@@ -376,7 +431,7 @@ export default function DatorePanel() {
     }
   };
 
-  // ---------- ELIMINA PDF SELEZIONATI (Storage + tabella)
+  // ELIMINA PDF SELEZIONATI
   const deleteSelectedPdfs = async () => {
     if (!selectedPaths.length) return;
 
@@ -406,7 +461,7 @@ export default function DatorePanel() {
     }
   };
 
-  // ---------- selezione multi
+  // selezione multi
   const togglePath = (p) => {
     setSelectedPaths((prev) => {
       if (prev.includes(p)) return prev.filter((x) => x !== p);
@@ -422,14 +477,13 @@ export default function DatorePanel() {
     setSelectedPaths([]);
   };
 
-  // ---------- CREA PREVENTIVO + PDF + SALVATAGGIO (NO download automatico)
+  // CREA PREVENTIVO + PDF + SALVATAGGIO
   const createQuoteAndSavePdf = async () => {
     setCreateError("");
     setCreateOk("");
 
     if (!companyId) return setCreateError("company_id mancante.");
     if (!session?.user?.id) return setCreateError("Sessione non valida.");
-
     if (!manualQuote && !activeRequest) {
       return setCreateError("Seleziona una richiesta oppure usa “Nuovo preventivo”.");
     }
@@ -444,13 +498,11 @@ export default function DatorePanel() {
     const safeEmail = sanitizeText(customerEmail, 120);
     const safePhone = sanitizeText(customerPhone, 60);
     const safeAddr = sanitizeText(customerAddress, 180);
-
     const safeTotals = computeTotals(valid.items);
 
     setCreating(true);
 
     try {
-      // 1) INSERT HEADER
       const headerPayload = {
         company_id: companyId,
         customer_name: custName,
@@ -467,7 +519,6 @@ export default function DatorePanel() {
       const header = await insertQuoteHeader(headerPayload);
       const quoteId = header.id;
 
-      // 2) INSERT ITEMS
       const itemsPayload = valid.items.map((it, idx) => ({
         id: uid(),
         quote_id: quoteId,
@@ -483,7 +534,6 @@ export default function DatorePanel() {
 
       await insertQuoteItems(itemsPayload);
 
-      // 3) BUILD PDF BLOB
       const pdfBlob = await buildQuotePdfBlob({
         company,
         header,
@@ -491,14 +541,12 @@ export default function DatorePanel() {
         totals: safeTotals,
       });
 
-      // 4) UPLOAD STORAGE
       const { storagePath } = await uploadPdfToStorage({
         companyId,
         quoteId,
         blob: pdfBlob,
       });
 
-      // 5) INSERT TABLE quote_files
       await insertQuoteFileRow({
         quote_id: quoteId,
         company_id: companyId,
@@ -551,12 +599,16 @@ export default function DatorePanel() {
         <div style={{ ...cardStyle, padding: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
             <div>
-              <div style={{ fontSize: 54, fontWeight: 950, color: "#0b1224", lineHeight: 1 }}>Area Datore</div>
+              <div style={{ fontSize: 54, fontWeight: 950, color: "#0b1224", lineHeight: 1 }}>
+                Area Datore
+              </div>
               <div style={{ marginTop: 10, color: "#475569", fontWeight: 800 }}>
                 Accesso riservato (role richiesto: <b>employer</b>)
               </div>
               {company?.name ? (
-                <div style={{ marginTop: 10, color: "#0b1224", fontWeight: 900 }}>Azienda: {company.name}</div>
+                <div style={{ marginTop: 10, color: "#0b1224", fontWeight: 900 }}>
+                  Azienda: {company.name}
+                </div>
               ) : null}
             </div>
 
@@ -642,16 +694,32 @@ export default function DatorePanel() {
         {/* CONTENUTO DATORE */}
         {session && isEmployer && !roleLoading && !roleError && (
           <>
+            {liveNotice ? (
+              <div
+                style={{
+                  marginTop: 16,
+                  padding: 14,
+                  borderRadius: 16,
+                  background: "#dbeafe",
+                  border: "1px solid #bfdbfe",
+                  color: "#1e3a8a",
+                  fontWeight: 900,
+                }}
+              >
+                {liveNotice}
+              </div>
+            ) : null}
+
             <RequestsManager
-  companyId={companyId}
-  requests={requests}
-  loading={requestsLoading}
-  error={requestsError}
-  onRefresh={loadRequests}
-  onPick={pickRequest}
-  onStartManualQuote={startManualQuote}
-  onDownloadPdf={handleDownloadRequestsPdf}
-/>
+              companyId={companyId}
+              requests={requests}
+              loading={requestsLoading}
+              error={requestsError}
+              onRefresh={loadRequests}
+              onPick={pickRequest}
+              onStartManualQuote={startManualQuote}
+              onDownloadPdf={handleDownloadRequestsPdf}
+            />
 
             {/* CREA PREVENTIVO */}
             <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
@@ -851,7 +919,7 @@ export default function DatorePanel() {
               )}
             </div>
 
-            {/* ✅ ARCHIVIO PREVENTIVI (ZIP + pulizia DB/storage) */}
+            {/* ARCHIVIO PREVENTIVI */}
             <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
               <QuoteArchiveManager
                 companyId={companyId}
@@ -868,7 +936,9 @@ export default function DatorePanel() {
             <div ref={filesSectionRef} style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <div>
-                  <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>Storico PDF preventivi salvati</div>
+                  <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
+                    Storico PDF preventivi salvati
+                  </div>
                   <div style={{ marginTop: 6, color: "#475569", fontWeight: 800 }}>
                     Seleziona uno o più PDF → poi scarica/elimina dai pulsanti.
                   </div>
@@ -994,7 +1064,6 @@ export default function DatorePanel() {
   );
 }
 
-// ---- styles
 const inputStyle = {
   padding: "16px 18px",
   borderRadius: 18,

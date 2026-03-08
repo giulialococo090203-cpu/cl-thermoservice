@@ -14,6 +14,9 @@ import {
   Fan,
   Droplet,
   Gauge,
+  ChevronDown,
+  FileText,
+  X,
 } from "lucide-react";
 
 const COMPANY_ID = "21cb4d5d-9566-4488-802c-a6b28488e486";
@@ -39,59 +42,77 @@ const FALLBACK = [
     title: "Installazione caldaie",
     description:
       "Installazione di caldaie ad alta efficienza con configurazione corretta e collaudo.",
+    long_description:
+      "Ci occupiamo del sopralluogo, della scelta della soluzione più adatta, dell’installazione e del collaudo finale.",
     icon: "Zap",
     pill: "Servizio richiesto",
     sort_order: 1,
     is_active: true,
+    files: [],
   },
   {
     id: "fallback-2",
     title: "Riparazione caldaie",
     description:
       "Interventi rapidi per guasti e blocchi. Diagnosi immediata e ripristino in sicurezza.",
+    long_description:
+      "Analizziamo il guasto, verifichiamo i componenti e interveniamo in modo rapido per ripristinare il corretto funzionamento.",
     icon: "Wrench",
     pill: null,
     sort_order: 2,
     is_active: true,
+    files: [],
   },
   {
     id: "fallback-3",
     title: "Manutenzione ordinaria",
     description: "Controlli periodici per efficienza, sicurezza e risparmio energetico.",
+    long_description:
+      "La manutenzione periodica aiuta a mantenere l’impianto efficiente, sicuro e più duraturo nel tempo.",
     icon: "Thermometer",
     pill: null,
     sort_order: 3,
     is_active: true,
+    files: [],
   },
   {
     id: "fallback-4",
     title: "Controllo fumi",
     description:
       "Analisi emissioni e supporto per verifiche previste dalla normativa.",
+    long_description:
+      "Eseguiamo verifiche e controlli utili per l’analisi delle emissioni e il rispetto delle normative vigenti.",
     icon: "ShieldCheck",
     pill: null,
     sort_order: 4,
     is_active: true,
+    files: [],
   },
   {
     id: "fallback-5",
     title: "Impianti idraulici",
     description:
       "Installazione e manutenzione di impianti idraulici civili e industriali.",
+    long_description:
+      "Realizziamo interventi su impianti idraulici con attenzione a affidabilità, sicurezza e corretta distribuzione.",
     icon: "Droplets",
     pill: null,
     sort_order: 5,
     is_active: true,
+    files: [],
   },
   {
     id: "fallback-6",
     title: "Climatizzazione",
     description:
       "Installazione e assistenza su impianti di climatizzazione e condizionamento.",
+    long_description:
+      "Seguiamo installazione, manutenzione e assistenza di impianti di climatizzazione per ambienti civili e professionali.",
     icon: "Snowflake",
     pill: null,
     sort_order: 6,
     is_active: true,
+    files: [],
   },
 ];
 
@@ -132,16 +153,211 @@ function parseBulletsFromText(text) {
   return { clean, bullets };
 }
 
+function normalizeFiles(value) {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((f) => ({
+      name: String(f?.name || f?.file_name || "File"),
+      url: String(f?.url || f?.publicUrl || f?.file_url || ""),
+      path: String(f?.path || f?.storage_path || ""),
+    }))
+    .filter((f) => f.url);
+}
+
+function DetailPanel({ service, onClose }) {
+  const Icon = ICONS[service.icon] || Wrench;
+  const files = normalizeFiles(service.files);
+
+  return (
+    <div
+      style={{
+        marginTop: 18,
+        borderRadius: 24,
+        border: "1px solid rgba(15,23,42,.10)",
+        background:
+          "radial-gradient(900px 320px at 18% 0%, rgba(31,75,143,.10), transparent 60%), rgba(255,255,255,.96)",
+        boxShadow: "0 18px 60px rgba(15,23,42,.10)",
+        padding: 22,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ display: "flex", gap: 14, alignItems: "flex-start", minWidth: 0 }}>
+          <div className="iconBox" style={{ width: 58, height: 58, borderRadius: 18, flex: "0 0 auto" }}>
+            <Icon size={24} />
+          </div>
+
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontWeight: 950,
+                fontSize: 24,
+                letterSpacing: "-0.02em",
+                lineHeight: 1.1,
+                color: "#0b1220",
+              }}
+            >
+              {service.title}
+            </div>
+
+            {service.pill ? (
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "inline-flex",
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  border: "1px solid rgba(229,57,53,.18)",
+                  background: "rgba(229,57,53,.08)",
+                  color: "rgba(15,23,42,.86)",
+                  fontWeight: 800,
+                  fontSize: 13,
+                }}
+              >
+                {service.pill}
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 14,
+            border: "1px solid rgba(15,23,42,.10)",
+            background: "#fff",
+            cursor: "pointer",
+            display: "grid",
+            placeItems: "center",
+            flex: "0 0 auto",
+          }}
+          aria-label="Chiudi dettaglio servizio"
+        >
+          <X size={18} />
+        </button>
+      </div>
+
+      {service.description ? (
+        <div
+          style={{
+            marginTop: 18,
+            color: "rgba(15,23,42,.80)",
+            fontWeight: 700,
+            lineHeight: 1.65,
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          {service.description}
+        </div>
+      ) : null}
+
+      {service.long_description ? (
+        <div
+          style={{
+            marginTop: 16,
+            color: "rgba(15,23,42,.72)",
+            fontWeight: 600,
+            lineHeight: 1.75,
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          {service.long_description}
+        </div>
+      ) : null}
+
+      {files.length ? (
+        <div style={{ marginTop: 20 }}>
+          <div
+            style={{
+              fontWeight: 900,
+              color: "#0b1224",
+              marginBottom: 10,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            File disponibili
+          </div>
+
+          <div style={{ display: "grid", gap: 10 }}>
+            {files.map((f, idx) => (
+              <a
+                key={`${f.url}-${idx}`}
+                href={f.url}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: "12px 14px",
+                  borderRadius: 16,
+                  border: "1px solid rgba(15,23,42,.08)",
+                  background: "#fff",
+                  textDecoration: "none",
+                  color: "#0b1220",
+                }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                  <FileText size={18} />
+                  <span
+                    style={{
+                      fontWeight: 800,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {f.name}
+                  </span>
+                </span>
+
+                <span style={{ fontWeight: 900, color: "#2563eb", whiteSpace: "nowrap" }}>
+                  Apri
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {!service.long_description && !files.length ? (
+        <div
+          style={{
+            marginTop: 18,
+            color: "#64748b",
+            fontWeight: 700,
+          }}
+        >
+          Nessun contenuto aggiuntivo disponibile per questo servizio.
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function ServicesSection() {
   const [rows, setRows] = useState([]);
   const [err, setErr] = useState("");
+  const [openId, setOpenId] = useState(null);
 
   const load = async () => {
     setErr("");
     try {
       const { data, error } = await supabase
         .from("services")
-        .select("id,title,description,icon,pill,sort_order,is_active")
+        .select("id,title,description,long_description,files,icon,pill,sort_order,is_active")
         .eq("company_id", COMPANY_ID)
         .eq("is_active", true)
         .order("sort_order", { ascending: true });
@@ -175,10 +391,18 @@ export default function ServicesSection() {
     return ["Interventi su appuntamento", "Trasparenza sui costi", "Ricambi e collaudo"];
   }, [rows]);
 
+  const openService = useMemo(() => {
+    return rows.find((r) => r.id === openId) || null;
+  }, [rows, openId]);
+
   if (!featured) return null;
 
   const FeaturedIcon = ICONS[featured.icon] || Zap;
   const featuredParsed = parseBulletsFromText(featured.description);
+
+  const toggleOpen = (id) => {
+    setOpenId((prev) => (prev === id ? null : id));
+  };
 
   return (
     <section id="servizi" className="section">
@@ -230,18 +454,24 @@ export default function ServicesSection() {
             gap: 18,
           }}
         >
-          {/* Featured */}
           <Reveal>
-            <div
+            <button
+              type="button"
+              onClick={() => toggleOpen(featured.id)}
               className="card cardHover servicesFeaturedCard"
               style={{
                 padding: 22,
                 borderRadius: 26,
                 background:
-                  "radial-gradient(900px 320px at 18% 0%, rgba(31,75,143,.12), transparent 60%), rgba(255,255,255,.92)",
+                  openId === featured.id
+                    ? "radial-gradient(900px 320px at 18% 0%, rgba(31,75,143,.18), transparent 60%), rgba(238,242,255,1)"
+                    : "radial-gradient(900px 320px at 18% 0%, rgba(31,75,143,.12), transparent 60%), rgba(255,255,255,.92)",
                 border: "1px solid rgba(15,23,42,.10)",
                 boxShadow: "0 18px 60px rgba(15,23,42,.10)",
                 minHeight: 260,
+                width: "100%",
+                textAlign: "left",
+                cursor: "pointer",
               }}
             >
               <div
@@ -285,24 +515,45 @@ export default function ServicesSection() {
                   </div>
                 </div>
 
-                {featured.pill ? (
+                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                  {featured.pill ? (
+                    <div
+                      className="servicesFeaturedPill"
+                      style={{
+                        padding: "10px 12px",
+                        borderRadius: 999,
+                        border: "1px solid rgba(229,57,53,.18)",
+                        background: "rgba(229,57,53,.08)",
+                        color: "rgba(15,23,42,.86)",
+                        fontWeight: 800,
+                        fontSize: 13,
+                        whiteSpace: "nowrap",
+                        flex: "0 0 auto",
+                      }}
+                    >
+                      {featured.pill}
+                    </div>
+                  ) : null}
+
                   <div
-                    className="servicesFeaturedPill"
                     style={{
-                      padding: "10px 12px",
-                      borderRadius: 999,
-                      border: "1px solid rgba(229,57,53,.18)",
-                      background: "rgba(229,57,53,.08)",
-                      color: "rgba(15,23,42,.86)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      color: "#475569",
                       fontWeight: 800,
-                      fontSize: 13,
-                      whiteSpace: "nowrap",
-                      flex: "0 0 auto",
                     }}
                   >
-                    {featured.pill}
+                    <span>{openId === featured.id ? "Chiudi" : "Apri"}</span>
+                    <ChevronDown
+                      size={18}
+                      style={{
+                        transform: openId === featured.id ? "rotate(180deg)" : "rotate(0deg)",
+                        transition: "transform .18s ease",
+                      }}
+                    />
                   </div>
-                ) : null}
+                </div>
               </div>
 
               {featuredParsed.bullets.length ? (
@@ -338,6 +589,7 @@ export default function ServicesSection() {
                 <a
                   className="btnAnim"
                   href="#preventivo"
+                  onClick={(e) => e.stopPropagation()}
                   style={{
                     padding: "12px 16px",
                     borderRadius: 16,
@@ -356,6 +608,7 @@ export default function ServicesSection() {
                 <a
                   className="btnAnim"
                   href="#contatti"
+                  onClick={(e) => e.stopPropagation()}
                   style={{
                     padding: "12px 16px",
                     borderRadius: 16,
@@ -369,51 +622,86 @@ export default function ServicesSection() {
                   Contattaci
                 </a>
               </div>
-            </div>
+            </button>
           </Reveal>
 
-          {/* Rest */}
           <div className="servicesRestGrid" style={{ display: "grid", gap: 12 }}>
             {rest.map((s) => {
               const Icon = ICONS[s.icon] || Wrench;
               const parsed = parseBulletsFromText(s.description);
+              const isOpen = openId === s.id;
 
               return (
                 <Reveal key={s.id}>
-                  <div
+                  <button
+                    type="button"
+                    onClick={() => toggleOpen(s.id)}
                     className="card serviceCard cardHover"
                     style={{
                       padding: 18,
                       borderRadius: 22,
                       alignItems: "center",
-                      background: "rgba(255,255,255,.92)",
+                      background: isOpen ? "rgba(238,242,255,1)" : "rgba(255,255,255,.92)",
+                      width: "100%",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      border: "1px solid rgba(15,23,42,.10)",
                     }}
                   >
-                    <div className="iconBox" style={{ width: 54, height: 54, borderRadius: 18 }}>
-                      <Icon size={22} />
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.01em" }}>
-                        {s.title}
+                    <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                      <div className="iconBox" style={{ width: 54, height: 54, borderRadius: 18 }}>
+                        <Icon size={22} />
                       </div>
-                      <p
+
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.01em" }}>
+                          {s.title}
+                        </div>
+                        <p
+                          style={{
+                            margin: "8px 0 0",
+                            color: "rgba(15,23,42,.72)",
+                            fontWeight: 600,
+                            lineHeight: 1.6,
+                            whiteSpace: "pre-wrap",
+                          }}
+                        >
+                          {parsed.clean}
+                        </p>
+                      </div>
+
+                      <div
                         style={{
-                          margin: "8px 0 0",
-                          color: "rgba(15,23,42,.72)",
-                          fontWeight: 600,
-                          lineHeight: 1.6,
-                          whiteSpace: "pre-wrap",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 8,
+                          color: "#475569",
+                          fontWeight: 800,
+                          flex: "0 0 auto",
                         }}
                       >
-                        {parsed.clean}
-                      </p>
+                        <span>{isOpen ? "Chiudi" : "Apri"}</span>
+                        <ChevronDown
+                          size={18}
+                          style={{
+                            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                            transition: "transform .18s ease",
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  </button>
                 </Reveal>
               );
             })}
           </div>
         </div>
+
+        {openService ? (
+          <Reveal>
+            <DetailPanel service={openService} onClose={() => setOpenId(null)} />
+          </Reveal>
+        ) : null}
 
         <style>{`
           @media (max-width: 980px){
