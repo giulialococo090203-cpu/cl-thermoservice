@@ -1,4 +1,8 @@
 export default function Footer() {
+  const openCookiePreferences = () => {
+    window.dispatchEvent(new Event("open-cookie-preferences"));
+  };
+
   return (
     <footer className="footer">
       <div className="container footerInner">
@@ -21,11 +25,13 @@ export default function Footer() {
           </div>
         </div>
 
-        <div style={{ marginTop: 14, opacity: 0.75, fontWeight: 700, color: "white" }}>
+        <div style={{ marginTop: 14, opacity: 0.75, fontWeight: 700, color: "white", lineHeight: 1.6 }}>
           © {new Date().getFullYear()} CL. Thermoservice S.r.l. – P.IVA 06441430821
+          <br />
+          Via Tommaso Calojra 36, Palermo – Email: clthermoservice@virgilio.it – Tel: 091406911
         </div>
 
-        <div style={{ marginTop: 10, display: "flex", gap: 14 }}>
+        <div style={{ marginTop: 10, display: "flex", gap: 14, flexWrap: "wrap" }}>
           <a href="/privacy-policy" style={{ color: "white", fontWeight: 700 }}>
             Privacy Policy
           </a>
@@ -33,6 +39,24 @@ export default function Footer() {
           <a href="/cookie-policy" style={{ color: "white", fontWeight: 700 }}>
             Cookie Policy
           </a>
+
+          <button
+            type="button"
+            onClick={openCookiePreferences}
+            style={{
+              background: "transparent",
+              border: "none",
+              padding: 0,
+              color: "white",
+              fontWeight: 700,
+              cursor: "pointer",
+              textDecoration: "underline",
+              fontSize: "inherit",
+              fontFamily: "inherit",
+            }}
+          >
+            Gestisci preferenze cookie
+          </button>
         </div>
       </div>
     </footer>

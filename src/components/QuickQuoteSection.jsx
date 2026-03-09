@@ -14,7 +14,7 @@ export default function QuickQuoteSection() {
     e.preventDefault();
 
     if (!privacy) {
-      alert("Devi accettare la Privacy Policy.");
+      alert("Devi dichiarare di aver letto la Privacy Policy.");
       return;
     }
 
@@ -50,6 +50,16 @@ export default function QuickQuoteSection() {
     color: "rgba(255,255,255,0.92)",
     fontWeight: 700,
     outline: "none",
+  };
+
+  const privacyTextStyle = {
+    fontSize: 14,
+    fontWeight: 700,
+    color: "white",
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 10,
+    lineHeight: 1.5,
   };
 
   return (
@@ -169,36 +179,31 @@ export default function QuickQuoteSection() {
               style={{ ...inputStyle, resize: "vertical" }}
             />
 
-            {/* PRIVACY POLICY */}
-            <label
-              style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: "white",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
+            <label style={privacyTextStyle}>
               <input
                 type="checkbox"
                 checked={privacy}
                 onChange={(e) => setPrivacy(e.target.checked)}
                 required
+                style={{ marginTop: 4 }}
               />
-
-              Ho letto e accetto la{" "}
-              <a
-                href="/privacy-policy"
-                target="_blank"
-                style={{
-                  textDecoration: "underline",
-                  color: "white",
-                  fontWeight: 900,
-                }}
-              >
-                Privacy Policy
-              </a>
+              <span>
+                Dichiaro di aver letto la{" "}
+                <a
+                  href="/privacy-policy"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    textDecoration: "underline",
+                    color: "white",
+                    fontWeight: 900,
+                  }}
+                >
+                  Privacy Policy
+                </a>{" "}
+                e autorizzo il trattamento dei dati personali per la gestione
+                della mia richiesta di contatto o preventivo.
+              </span>
             </label>
 
             <button
