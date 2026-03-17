@@ -18,6 +18,9 @@ export default function EmployerQuoteBuilderSection({
   items,
   setItems,
   totals,
+  selectedClauses,
+  setSelectedClauses,
+  optionalClauses,
   onCreate,
   onClose,
 }) {
@@ -26,48 +29,107 @@ export default function EmployerQuoteBuilderSection({
   };
 
   const addItem = () => {
-    setItems((prev) => [...prev, { title: "Voce", description: "", qty: 1, unit_price: 0, vat_rate: 10 }]);
+    setItems((prev) => [...prev, { title: "Voce", description: "", qty: 1, unit_price: 0 }]);
   };
 
   const removeItem = (idx) => {
     setItems((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  const toggleClause = (key) => {
+    setSelectedClauses((prev) =>
+      prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]
+    );
+  };
+
   return (
     <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
-      <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>Generazione preventivo (PDF + salvataggio)</div>
+      <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
+        Generazione preventivo (PDF + salvataggio)
+      </div>
       <div style={{ marginTop: 6, color: "#475569", fontWeight: 800 }}>
         Seleziona una richiesta sopra e compila i dati. Il PDF verrà salvato nel bucket <b>quote_files</b>.
       </div>
 
       {!activeRequest ? (
-        <div style={{ marginTop: 14, padding: 14, borderRadius: 16, background: "#f8fafc", border: "1px solid rgba(15,23,42,0.10)", fontWeight: 900, color: "#475569" }}>
+        <div
+          style={{
+            marginTop: 14,
+            padding: 14,
+            borderRadius: 16,
+            background: "#f8fafc",
+            border: "1px solid rgba(15,23,42,0.10)",
+            fontWeight: 900,
+            color: "#475569",
+          }}
+        >
           Seleziona una richiesta e clicca “Crea preventivo”.
         </div>
       ) : (
         <>
           {createError && (
-            <div style={{ marginTop: 14, padding: 14, borderRadius: 16, background: "#fee2e2", border: "1px solid #fecaca", color: "#991b1b", fontWeight: 900 }}>
+            <div
+              style={{
+                marginTop: 14,
+                padding: 14,
+                borderRadius: 16,
+                background: "#fee2e2",
+                border: "1px solid #fecaca",
+                color: "#991b1b",
+                fontWeight: 900,
+              }}
+            >
               {createError}
             </div>
           )}
+
           {createOk && (
-            <div style={{ marginTop: 14, padding: 14, borderRadius: 16, background: "#dcfce7", border: "1px solid #bbf7d0", color: "#065f46", fontWeight: 900 }}>
+            <div
+              style={{
+                marginTop: 14,
+                padding: 14,
+                borderRadius: 16,
+                background: "#dcfce7",
+                border: "1px solid #bbf7d0",
+                color: "#065f46",
+                fontWeight: 900,
+              }}
+            >
               {createOk}
             </div>
           )}
 
           <div style={{ marginTop: 14, display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
-            <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nome cliente" style={inputStyle} />
-            <input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} placeholder="Email cliente" style={inputStyle} />
-            <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Telefono cliente" style={inputStyle} />
-            <input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="Indirizzo cliente" style={inputStyle} />
+            <input
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Nome cliente"
+              style={inputStyle}
+            />
+            <input
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              placeholder="Email cliente"
+              style={inputStyle}
+            />
+            <input
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              placeholder="Telefono cliente"
+              style={inputStyle}
+            />
+            <input
+              value={customerAddress}
+              onChange={(e) => setCustomerAddress(e.target.value)}
+              placeholder="Indirizzo cliente"
+              style={inputStyle}
+            />
           </div>
 
           <textarea
             value={notesInternal}
             onChange={(e) => setNotesInternal(e.target.value)}
-            placeholder="Descrizione / note libere (es. dettaglio richiesta)"
+            placeholder="Descrizione / note libere"
             rows={4}
             style={{ ...inputStyle, gridColumn: "1 / -1", resize: "vertical", marginTop: 12 }}
           />
@@ -84,22 +146,88 @@ export default function EmployerQuoteBuilderSection({
                   borderRadius: 20,
                   padding: 14,
                   display: "grid",
-                  gridTemplateColumns: "1.2fr 1.3fr 110px 140px 110px 110px",
+                  gridTemplateColumns: "1.4fr 1.5fr 110px 160px 110px",
                   gap: 10,
                   alignItems: "start",
                 }}
               >
-                <input value={it.title} onChange={(e) => updateItem(idx, { title: e.target.value })} placeholder="Titolo" style={miniInput} />
-                <input value={it.description} onChange={(e) => updateItem(idx, { description: e.target.value })} placeholder="Descrizione" style={miniInput} />
-                <input value={it.qty} onChange={(e) => updateItem(idx, { qty: e.target.value })} placeholder="Qta" style={miniInput} />
-                <input value={it.unit_price} onChange={(e) => updateItem(idx, { unit_price: e.target.value })} placeholder="Prezzo (€)" style={miniInput} />
-                <input value={it.vat_rate} onChange={(e) => updateItem(idx, { vat_rate: e.target.value })} placeholder="IVA %" style={miniInput} />
+                <input
+                  value={it.title}
+                  onChange={(e) => updateItem(idx, { title: e.target.value })}
+                  placeholder="Titolo"
+                  style={miniInput}
+                />
+                <input
+                  value={it.description}
+                  onChange={(e) => updateItem(idx, { description: e.target.value })}
+                  placeholder="Descrizione"
+                  style={miniInput}
+                />
+                <input
+                  value={it.qty}
+                  onChange={(e) => updateItem(idx, { qty: e.target.value })}
+                  placeholder="Qta"
+                  style={miniInput}
+                />
+                <input
+                  value={it.unit_price}
+                  onChange={(e) => updateItem(idx, { unit_price: e.target.value })}
+                  placeholder="Prezzo finale (€)"
+                  style={miniInput}
+                />
 
-                <button style={{ ...btn("danger"), height: 44 }} onClick={() => removeItem(idx)} type="button" disabled={items.length === 1}>
+                <button
+                  style={{ ...btn("danger"), height: 44 }}
+                  onClick={() => removeItem(idx)}
+                  type="button"
+                  disabled={items.length === 1}
+                >
                   Rimuovi
                 </button>
               </div>
             ))}
+          </div>
+
+          <div style={{ marginTop: 16, fontWeight: 950, color: "#0b1224" }}>
+            Clausole aggiuntive
+          </div>
+
+          <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+            {(optionalClauses || []).map((clause) => {
+              const checked = selectedClauses.includes(clause.key);
+
+              return (
+                <label
+                  key={clause.key}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 12,
+                    padding: 14,
+                    borderRadius: 18,
+                    border: "1px solid rgba(15,23,42,0.10)",
+                    background: checked ? "rgba(99,102,241,0.06)" : "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleClause(clause.key)}
+                    style={{ marginTop: 3 }}
+                  />
+                  <span
+                    style={{
+                      fontWeight: 800,
+                      color: "#334155",
+                      lineHeight: 1.55,
+                    }}
+                  >
+                    {clause.label}
+                  </span>
+                </label>
+              );
+            })}
           </div>
 
           <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
@@ -109,13 +237,17 @@ export default function EmployerQuoteBuilderSection({
 
             <div style={{ marginLeft: "auto", display: "flex", gap: 10, flexWrap: "wrap" }}>
               <div style={pill}>Imponibile: € {totals.subtotal.toFixed(2)}</div>
-              <div style={pill}>IVA: € {totals.vat.toFixed(2)}</div>
               <div style={{ ...pill, fontWeight: 950 }}>Totale: € {totals.total.toFixed(2)}</div>
             </div>
           </div>
 
           <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button style={{ ...btn("dark"), opacity: creating ? 0.7 : 1 }} type="button" onClick={onCreate} disabled={creating}>
+            <button
+              style={{ ...btn("dark"), opacity: creating ? 0.7 : 1 }}
+              type="button"
+              onClick={onCreate}
+              disabled={creating}
+            >
               {creating ? "Salvo..." : "Crea preventivo + Salva PDF"}
             </button>
 

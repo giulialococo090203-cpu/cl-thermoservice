@@ -18,7 +18,15 @@ import {
 } from "./datoreApi";
 
 import { buildRequestsPdfBlob, buildQuotePdfBlob, fmtDateTime, fmtEuro } from "./pdf";
-import { computeTotals, validateAndCleanItems, sanitizeText, uid } from "./validators";
+import {
+  computeTotals,
+  validateAndCleanItems,
+  sanitizeText,
+  uid,
+  QUOTE_OPTIONAL_CLAUSES,
+  getClauseLabels,
+  sanitizeSelectedClauses,
+} from "./validators";
 
 import RequestsManager from "./RequestsManager";
 
@@ -44,7 +52,7 @@ export default function DatorePanel() {
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState("");
 
-  // ✅ realtime notice
+  // realtime notice
   const [liveNotice, setLiveNotice] = useState("");
   const firstRealtimeLoadRef = useRef(true);
 
@@ -69,9 +77,10 @@ export default function DatorePanel() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [notesInternal, setNotesInternal] = useState("");
+  const [selectedClauses, setSelectedClauses] = useState([]);
 
   const [items, setItems] = useState([
-    { title: "Intervento", description: "", qty: 1, unit_price: 0, vat_rate: 10 },
+    { title: "Intervento", description: "", qty: 1, unit_price: 0 },
   ]);
 
   const userEmail = session?.user?.email || "";
@@ -227,7 +236,7 @@ export default function DatorePanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id, roleLoading, roleError, role, companyId]);
 
-  // ✅ REALTIME richieste
+  // REALTIME richieste
   useEffect(() => {
     if (!session?.user?.id) return;
     if (roleLoading || roleError) return;
@@ -314,6 +323,23 @@ export default function DatorePanel() {
     setLiveNotice("");
   };
 
+  const resetQuoteForm = () => {
+    setActiveRequest(null);
+    setManualQuote(false);
+    setCreateError("");
+    setCreateOk("");
+    setLastCreatedStoragePath(null);
+
+    setCustomerName("");
+    setCustomerEmail("");
+    setCustomerPhone("");
+    setCustomerAddress("");
+    setNotesInternal("");
+    setSelectedClauses([]);
+
+    setItems([{ title: "Intervento", description: "", qty: 1, unit_price: 0 }]);
+  };
+
   // PREVENTIVO: seleziona richiesta
   const pickRequest = (q) => {
     setManualQuote(false);
@@ -328,8 +354,9 @@ export default function DatorePanel() {
     setCustomerPhone(q?.telefono || "");
     setCustomerAddress("");
     setNotesInternal(q?.messaggio || "");
+    setSelectedClauses([]);
 
-    setItems([{ title: "Intervento", description: "", qty: 1, unit_price: 0, vat_rate: 10 }]);
+    setItems([{ title: "Intervento", description: "", qty: 1, unit_price: 0 }]);
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -347,8 +374,9 @@ export default function DatorePanel() {
     setCustomerPhone("");
     setCustomerAddress("");
     setNotesInternal("");
+    setSelectedClauses([]);
 
-    setItems([{ title: "Intervento", description: "", qty: 1, unit_price: 0, vat_rate: 10 }]);
+    setItems([{ title: "Intervento", description: "", qty: 1, unit_price: 0 }]);
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -361,12 +389,18 @@ export default function DatorePanel() {
   const addItem = () => {
     setItems((prev) => [
       ...prev,
-      { title: "Voce", description: "", qty: 1, unit_price: 0, vat_rate: 10 },
+      { title: "Voce", description: "", qty: 1, unit_price: 0 },
     ]);
   };
 
   const removeItem = (idx) => {
     setItems((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const toggleClause = (key) => {
+    setSelectedClauses((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
   };
 
   const cleanedForTotals = useMemo(() => {
@@ -499,6 +533,8 @@ export default function DatorePanel() {
     const safePhone = sanitizeText(customerPhone, 60);
     const safeAddr = sanitizeText(customerAddress, 180);
     const safeTotals = computeTotals(valid.items);
+    const safeClauseKeys = sanitizeSelectedClauses(selectedClauses);
+    const safeClauseLabels = getClauseLabels(safeClauseKeys);
 
     setCreating(true);
 
@@ -527,7 +563,7 @@ export default function DatorePanel() {
         description: it.description,
         qty: it.qty,
         unit_price: it.unit_price,
-        vat_rate: it.vat_rate,
+        vat_rate: 0,
         line_total: it.line_total,
         sort_order: idx + 1,
       }));
@@ -539,6 +575,7 @@ export default function DatorePanel() {
         header,
         items: valid.items,
         totals: safeTotals,
+        selectedClauses: safeClauseLabels,
       });
 
       const { storagePath } = await uploadPdfToStorage({
@@ -569,7 +606,7 @@ export default function DatorePanel() {
       const msg = String(e?.message || e);
 
       if (msg.toLowerCase().includes("numeric field overflow")) {
-        setCreateError("Errore: numeri troppo grandi per il database. Riduci quantità/prezzo/IVA.");
+        setCreateError("Errore: numeri troppo grandi per il database. Riduci quantità/prezzo.");
       } else if (msg.toLowerCase().includes("row-level security")) {
         setCreateError(
           "Errore permessi (RLS): la policy non consente questo inserimento. Controlla le policy su quote_headers / quote_items / quote_files."
@@ -787,7 +824,7 @@ export default function DatorePanel() {
                           borderRadius: 20,
                           padding: 14,
                           display: "grid",
-                          gridTemplateColumns: "1.2fr 1.3fr 110px 140px 110px 110px",
+                          gridTemplateColumns: "1.4fr 1.5fr 110px 160px 110px",
                           gap: 10,
                           alignItems: "start",
                         }}
@@ -813,13 +850,7 @@ export default function DatorePanel() {
                         <input
                           value={String(it.unit_price ?? "")}
                           onChange={(e) => updateItem(idx, { unit_price: e.target.value })}
-                          placeholder="Prezzo (€)"
-                          style={miniInput}
-                        />
-                        <input
-                          value={String(it.vat_rate ?? "")}
-                          onChange={(e) => updateItem(idx, { vat_rate: e.target.value })}
-                          placeholder="IVA %"
+                          placeholder="Prezzo finale (€)"
                           style={miniInput}
                         />
 
@@ -833,6 +864,54 @@ export default function DatorePanel() {
                         </button>
                       </div>
                     ))}
+                  </div>
+
+                  <div style={{ marginTop: 16, fontWeight: 950, color: "#0b1224" }}>
+                    Clausole aggiuntive
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "grid",
+                      gap: 10,
+                    }}
+                  >
+                    {QUOTE_OPTIONAL_CLAUSES.map((clause) => {
+                      const checked = selectedClauses.includes(clause.key);
+
+                      return (
+                        <label
+                          key={clause.key}
+                          style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: 12,
+                            padding: 14,
+                            borderRadius: 18,
+                            border: "1px solid rgba(15,23,42,0.10)",
+                            background: checked ? "rgba(99,102,241,0.06)" : "#fff",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleClause(clause.key)}
+                            style={{ marginTop: 3 }}
+                          />
+                          <span
+                            style={{
+                              fontWeight: 800,
+                              color: "#334155",
+                              lineHeight: 1.55,
+                            }}
+                          >
+                            {clause.label}
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
 
                   <div
@@ -859,7 +938,6 @@ export default function DatorePanel() {
                       }}
                     >
                       <div style={pill}>Imponibile: € {fmtEuro(totals.subtotal)}</div>
-                      <div style={pill}>IVA: € {fmtEuro(totals.vat)}</div>
                       <div style={{ ...pill, fontWeight: 950 }}>Totale: € {fmtEuro(totals.total)}</div>
                     </div>
                   </div>
@@ -896,20 +974,7 @@ export default function DatorePanel() {
                         minWidth: 140,
                       }}
                       type="button"
-                      onClick={() => {
-                        setActiveRequest(null);
-                        setManualQuote(false);
-                        setCreateError("");
-                        setCreateOk("");
-
-                        setCustomerName("");
-                        setCustomerEmail("");
-                        setCustomerPhone("");
-                        setCustomerAddress("");
-                        setNotesInternal("");
-
-                        setItems([{ title: "Intervento", description: "", qty: 1, unit_price: 0, vat_rate: 10 }]);
-                      }}
+                      onClick={resetQuoteForm}
                       disabled={creating}
                     >
                       Chiudi

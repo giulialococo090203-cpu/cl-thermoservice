@@ -17,15 +17,20 @@ const safe = (s) => String(s ?? "").trim();
 const formatDate = (isoOrDate) => {
   try {
     const d = isoOrDate ? new Date(isoOrDate) : new Date();
-    return d.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" });
+    return d.toLocaleDateString("it-IT", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
   } catch {
     return "-";
   }
 };
 
-// header “numero” leggibile
 const formatQuoteNumber = (quoteId) => {
-  const x = String(quoteId || "").replace(/[^a-zA-Z0-9]/g, "").slice(-10);
+  const x = String(quoteId || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(-10);
   return x ? `Q-${x.toUpperCase()}` : `Q-${Date.now()}`;
 };
 
@@ -34,10 +39,10 @@ export async function buildQuotePdfBlob({
   header,
   items,
   totals,
+  selectedClauses = [],
 }) {
   const doc = new jsPDF({ unit: "pt", format: "a4", compress: true });
 
-  // --- palette simile al fac-simile (teal)
   const TEAL = { r: 0, g: 148, b: 170 };
   const DARK = { r: 11, g: 18, b: 36 };
   const MUTED = { r: 71, g: 85, b: 105 };
@@ -64,33 +69,29 @@ export async function buildQuotePdfBlob({
   const customerPhone = safe(header?.customer_phone || "");
   const customerAddress = safe(header?.customer_address || "");
 
-  const quoteNumber = safe(header?.number || header?.quote_number || formatQuoteNumber(header?.id));
+  const quoteNumber = safe(
+    header?.number || header?.quote_number || formatQuoteNumber(header?.id)
+  );
   const quoteDate = formatDate(header?.created_at || new Date());
 
-  // --- LOGO (se c’è)
   let logoDataUrl = null;
   try {
-    logoDataUrl = await getLogoDataUrl(); // deve tornare data:image/png;base64,...
+    logoDataUrl = await getLogoDataUrl();
   } catch {
     logoDataUrl = null;
   }
 
-  // ========== HEADER ==========
   const topY = margin;
-
-  // Logo box (sinistra)
   const logoBoxW = 110;
   const logoBoxH = 70;
 
   if (logoDataUrl) {
     try {
-      // png/jpg ok
       doc.addImage(logoDataUrl, "PNG", margin, topY, logoBoxW, logoBoxH, undefined, "FAST");
     } catch {
-      // se fallisce addImage, ignora
+      // ignore
     }
   } else {
-    // placeholder leggero se logo mancante
     doc.setDrawColor(210);
     doc.roundedRect(margin, topY, logoBoxW, logoBoxH, 10, 10);
     doc.setFont("helvetica", "bold");
@@ -98,7 +99,6 @@ export async function buildQuotePdfBlob({
     doc.text("LOGO", margin + 34, topY + 40);
   }
 
-  // Dati azienda (sotto/accanto al logo)
   const companyX = margin + logoBoxW + 14;
   let y = topY + 14;
 
@@ -124,12 +124,10 @@ export async function buildQuotePdfBlob({
   ].filter(Boolean);
 
   rightInfo.forEach((line) => {
-    if (!line) return;
     doc.text(line, companyX, y);
     y += 14;
   });
 
-  // Titolo PREVENTIVO (destra)
   const titleX = pageW - margin;
   doc.setFont("helvetica", "bold");
   doc.setTextColor(TEAL.r, TEAL.g, TEAL.b);
@@ -146,12 +144,10 @@ export async function buildQuotePdfBlob({
   doc.text(quoteNumber, titleX, topY + 46, { align: "right" });
   doc.text(quoteDate, titleX, topY + 62, { align: "right" });
 
-  // Riga teal sotto header
   const headerBottomY = topY + logoBoxH + 18;
   doc.setFillColor(TEAL.r, TEAL.g, TEAL.b);
   doc.rect(margin, headerBottomY, pageW - margin * 2, 10, "F");
 
-  // ========== BLOCCO CLIENTE ==========
   const clientBoxY = headerBottomY + 22;
 
   doc.setFont("helvetica", "bold");
@@ -180,7 +176,6 @@ export async function buildQuotePdfBlob({
     cy += 14;
   });
 
-  // Oggetto / note (destra)
   const subjectX = pageW - margin;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
@@ -192,16 +187,15 @@ export async function buildQuotePdfBlob({
   doc.setTextColor(DARK.r, DARK.g, DARK.b);
 
   const subject = safe(header?.subject || header?.oggetto || "");
-  const subjectText = subject || safe(header?.notes_internal || "") || "Preventivo lavori / intervento";
+  const subjectText =
+    subject || safe(header?.notes_internal || "") || "Preventivo lavori / intervento";
   const subjectWrapped = doc.splitTextToSize(subjectText, 200);
   doc.text(subjectWrapped, subjectX, clientBoxY + 18, { align: "right" });
 
-  // separatore
   const afterClientY = Math.max(cy, clientBoxY + 48) + 10;
   doc.setDrawColor(230);
   doc.line(margin, afterClientY, pageW - margin, afterClientY);
 
-  // ========== TABELLA VOCI ==========
   const tableStartY = afterClientY + 14;
 
   const body = (Array.isArray(items) ? items : []).map((it) => {
@@ -210,21 +204,14 @@ export async function buildQuotePdfBlob({
     const label = [title, desc].filter(Boolean).join("\n");
     const qty = Number(it.qty || 0);
     const unit = Number(it.unit_price || 0);
-    const vat = Number(it.vat_rate || 0);
     const lineTotal = Number(it.line_total ?? qty * unit);
 
-    return [
-      label || "-",
-      qty ? qty.toLocaleString("it-IT") : "0",
-      euro(unit),
-      `${vat}%`,
-      euro(lineTotal),
-    ];
+    return [label || "-", qty ? qty.toLocaleString("it-IT") : "0", euro(unit), euro(lineTotal)];
   });
 
   autoTable(doc, {
     startY: tableStartY,
-    head: [["Descrizione", "Q.tà", "Prezzo", "IVA", "Totale"]],
+    head: [["Descrizione", "Q.tà", "Prezzo", "Totale"]],
     body,
     theme: "grid",
     styles: {
@@ -232,7 +219,7 @@ export async function buildQuotePdfBlob({
       fontSize: 9.5,
       cellPadding: 6,
       valign: "top",
-      overflow: "linebreak", // ✅ evita “non fit page”
+      overflow: "linebreak",
     },
     headStyles: {
       fillColor: [TEAL.r, TEAL.g, TEAL.b],
@@ -240,53 +227,64 @@ export async function buildQuotePdfBlob({
       fontStyle: "bold",
     },
     columnStyles: {
-      0: { cellWidth: 280 }, // descrizione
-      1: { cellWidth: 55, halign: "right" },
-      2: { cellWidth: 80, halign: "right" },
-      3: { cellWidth: 55, halign: "right" },
-      4: { cellWidth: 83, halign: "right" },
+      0: { cellWidth: 335 },
+      1: { cellWidth: 60, halign: "right" },
+      2: { cellWidth: 90, halign: "right" },
+      3: { cellWidth: 90, halign: "right" },
     },
     margin: { left: margin, right: margin },
   });
 
-  const tableEndY = doc.lastAutoTable?.finalY || tableStartY + 40;
+  let cursorY = doc.lastAutoTable?.finalY || tableStartY + 40;
 
-  // ========== TOTALI (box in basso a destra) ==========
+  if (Array.isArray(selectedClauses) && selectedClauses.length > 0) {
+    cursorY += 18;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(MUTED.r, MUTED.g, MUTED.b);
+    doc.text("Clausole aggiuntive", margin, cursorY);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(DARK.r, DARK.g, DARK.b);
+
+    let clauseY = cursorY + 16;
+
+    selectedClauses.forEach((clause, index) => {
+      const wrapped = doc.splitTextToSize(`• ${safe(clause)}`, pageW - margin * 2);
+      doc.text(wrapped, margin, clauseY);
+      clauseY += wrapped.length * 12 + 6;
+    });
+
+    cursorY = clauseY;
+  }
+
   const totalsBoxW = 240;
   const totalsBoxX = pageW - margin - totalsBoxW;
-  const totalsBoxY = tableEndY + 16;
+  const totalsBoxY = cursorY + 12;
 
   const subtotal = Number(totals?.subtotal || 0);
-  const vatAmount = Number(totals?.vat || 0);
   const total = Number(totals?.total || 0);
 
   doc.setDrawColor(230);
   doc.setFillColor(248, 250, 252);
-  doc.roundedRect(totalsBoxX, totalsBoxY, totalsBoxW, 78, 12, 12, "FD");
+  doc.roundedRect(totalsBoxX, totalsBoxY, totalsBoxW, 58, 12, 12, "FD");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(DARK.r, DARK.g, DARK.b);
 
   const row1Y = totalsBoxY + 22;
-  const row2Y = totalsBoxY + 42;
-  const row3Y = totalsBoxY + 64;
+  const row2Y = totalsBoxY + 44;
 
   doc.text("Imponibile", totalsBoxX + 14, row1Y);
   doc.text(euro(subtotal), totalsBoxX + totalsBoxW - 14, row1Y, { align: "right" });
 
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(MUTED.r, MUTED.g, MUTED.b);
-  doc.text("IVA", totalsBoxX + 14, row2Y);
-  doc.text(euro(vatAmount), totalsBoxX + totalsBoxW - 14, row2Y, { align: "right" });
+  doc.text("Totale Documento", totalsBoxX + 14, row2Y);
+  doc.text(euro(total), totalsBoxX + totalsBoxW - 14, row2Y, { align: "right" });
 
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(DARK.r, DARK.g, DARK.b);
-  doc.text("Totale Documento", totalsBoxX + 14, row3Y);
-  doc.text(euro(total), totalsBoxX + totalsBoxW - 14, row3Y, { align: "right" });
-
-  // ========== NOTE / PAGAMENTO (footer) ==========
-  const footerY = totalsBoxY + 92;
+  const footerY = totalsBoxY + 72;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(MUTED.r, MUTED.g, MUTED.b);
@@ -300,10 +298,8 @@ export async function buildQuotePdfBlob({
   const notesWrapped = doc.splitTextToSize(notes || "—", pageW - margin * 2);
   doc.text(notesWrapped, margin, footerY + 16);
 
-  // Riga teal finale
   doc.setFillColor(TEAL.r, TEAL.g, TEAL.b);
   doc.rect(margin, pageH - margin - 14, pageW - margin * 2, 14, "F");
 
-  // output blob
   return doc.output("blob");
 }

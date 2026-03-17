@@ -8,7 +8,6 @@ export function uid() {
 export function sanitizeText(value, maxLen = 200) {
   const s = String(value ?? "").trim();
   if (!s) return "";
-  // evita caratteri strani “invisibili”
   const cleaned = s.replace(/\s+/g, " ").trim();
   return cleaned.slice(0, maxLen);
 }
@@ -29,11 +28,9 @@ function round2(n) {
   return Math.round(n * 100) / 100;
 }
 
-// Limiti anti “numeric overflow” (adattati al tuo DB)
 const LIMITS = {
   qtyMax: 9999,
   unitPriceMax: 999999.99,
-  vatMax: 100,
 };
 
 export function validateAndCleanItems(items) {
@@ -44,27 +41,24 @@ export function validateAndCleanItems(items) {
   const cleaned = [];
 
   for (const raw of items) {
-    const title = sanitizeText(raw?.title, 80);
-    const description = sanitizeText(raw?.description, 160);
+    const title = sanitizeText(raw?.title, 120);
+    const description = sanitizeText(raw?.description, 220);
 
     let qty = toNumber(raw?.qty);
     let unit_price = toNumber(raw?.unit_price);
-    let vat_rate = toNumber(raw?.vat_rate);
 
     if (!title) continue;
 
     if (!Number.isFinite(qty) || qty <= 0) {
       return { ok: false, error: "Quantità non valida (deve essere > 0)." };
     }
+
     if (!Number.isFinite(unit_price) || unit_price < 0) {
       return { ok: false, error: "Prezzo non valido (deve essere >= 0)." };
     }
-    if (!Number.isFinite(vat_rate) || vat_rate < 0) vat_rate = 0;
 
-    // ✅ clamp anti overflow
     qty = clamp(qty, 0.01, LIMITS.qtyMax);
     unit_price = clamp(unit_price, 0, LIMITS.unitPriceMax);
-    vat_rate = clamp(vat_rate, 0, LIMITS.vatMax);
 
     const line_total = round2(qty * unit_price);
 
@@ -73,7 +67,7 @@ export function validateAndCleanItems(items) {
       description: description || null,
       qty,
       unit_price: round2(unit_price),
-      vat_rate: Math.round(vat_rate),
+      vat_rate: 0,
       line_total,
     });
   }
@@ -87,21 +81,46 @@ export function validateAndCleanItems(items) {
 
 export function computeTotals(items) {
   const sub = round2(
-    (items || []).reduce((acc, it) => acc + (Number(it.qty) || 0) * (Number(it.unit_price) || 0), 0)
-  );
-
-  const vat = round2(
     (items || []).reduce((acc, it) => {
-      const qty = Number(it.qty) || 0;
-      const price = Number(it.unit_price) || 0;
-      const rate = Number(it.vat_rate) || 0;
-      return acc + (qty * price * rate) / 100;
+      return acc + ((Number(it.qty) || 0) * (Number(it.unit_price) || 0));
     }, 0)
   );
 
   return {
     subtotal: sub,
-    vat,
-    total: round2(sub + vat),
+    vat: 0,
+    total: sub,
   };
+}
+
+export const QUOTE_OPTIONAL_CLAUSES = [
+  {
+    key: "warranty_renewal",
+    label:
+      "Estensione di garanzia subordinata al rinnovo annuale del contratto di manutenzione, condizione necessaria per il mantenimento della validità della stessa.",
+  },
+  {
+    key: "disposal_by_customer",
+    label:
+      "Smaltimento della caldaia a carico dell’utente, comprensivo di tutte le operazioni di rimozione, trasporto e conferimento presso centri autorizzati, nel rispetto della normativa vigente.",
+  },
+  {
+    key: "disposal_included",
+    label:
+      "Smaltimento della caldaia incluso nel servizio, comprensivo delle operazioni di rimozione, trasporto e conferimento presso centri autorizzati, in conformità alle normative vigenti in materia di rifiuti.",
+  },
+];
+
+export function sanitizeSelectedClauses(selected) {
+  const allowed = new Set(QUOTE_OPTIONAL_CLAUSES.map((c) => c.key));
+
+  if (!Array.isArray(selected)) return [];
+
+  return selected.filter((key) => allowed.has(key));
+}
+
+export function getClauseLabels(selected) {
+  const safeKeys = sanitizeSelectedClauses(selected);
+  const map = new Map(QUOTE_OPTIONAL_CLAUSES.map((c) => [c.key, c.label]));
+  return safeKeys.map((key) => map.get(key)).filter(Boolean);
 }
