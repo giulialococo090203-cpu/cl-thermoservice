@@ -78,6 +78,7 @@ export default function DatorePanel() {
   const [customerAddress, setCustomerAddress] = useState("");
   const [notesInternal, setNotesInternal] = useState("");
   const [selectedClauses, setSelectedClauses] = useState([]);
+  const [manualTotal, setManualTotal] = useState("");
 
   const [items, setItems] = useState([
     { title: "Intervento", description: "", qty: 1, unit_price: 0 },
@@ -336,6 +337,7 @@ export default function DatorePanel() {
     setCustomerAddress("");
     setNotesInternal("");
     setSelectedClauses([]);
+    setManualTotal("");
 
     setItems([{ title: "Intervento", description: "", qty: 1, unit_price: 0 }]);
   };
@@ -355,6 +357,7 @@ export default function DatorePanel() {
     setCustomerAddress("");
     setNotesInternal(q?.messaggio || "");
     setSelectedClauses([]);
+    setManualTotal("");
 
     setItems([{ title: "Intervento", description: "", qty: 1, unit_price: 0 }]);
 
@@ -375,6 +378,7 @@ export default function DatorePanel() {
     setCustomerAddress("");
     setNotesInternal("");
     setSelectedClauses([]);
+    setManualTotal("");
 
     setItems([{ title: "Intervento", description: "", qty: 1, unit_price: 0 }]);
 
@@ -409,6 +413,21 @@ export default function DatorePanel() {
   }, [items]);
 
   const totals = useMemo(() => computeTotals(cleanedForTotals), [cleanedForTotals]);
+
+  const effectiveTotals = useMemo(() => {
+    const parsedManual = Number(String(manualTotal || "").replace(",", ".").trim());
+    const hasManualTotal = Number.isFinite(parsedManual) && parsedManual >= 0;
+
+    if (hasManualTotal) {
+      return {
+        subtotal: parsedManual,
+        vat: 0,
+        total: parsedManual,
+      };
+    }
+
+    return totals;
+  }, [manualTotal, totals]);
 
   // Scarica PDF richieste
   const handleDownloadRequestsPdf = () => {
@@ -532,7 +551,7 @@ export default function DatorePanel() {
     const safeEmail = sanitizeText(customerEmail, 120);
     const safePhone = sanitizeText(customerPhone, 60);
     const safeAddr = sanitizeText(customerAddress, 180);
-    const safeTotals = computeTotals(valid.items);
+    const safeTotals = effectiveTotals;
     const safeClauseKeys = sanitizeSelectedClauses(selectedClauses);
     const safeClauseLabels = getClauseLabels(safeClauseKeys);
 
@@ -935,10 +954,20 @@ export default function DatorePanel() {
                         gap: 10,
                         flexWrap: "wrap",
                         justifyContent: "flex-end",
+                        alignItems: "center",
                       }}
                     >
-                      <div style={pill}>Imponibile: € {fmtEuro(totals.subtotal)}</div>
-                      <div style={{ ...pill, fontWeight: 950 }}>Totale: € {fmtEuro(totals.total)}</div>
+                      <input
+                        value={manualTotal}
+                        onChange={(e) => setManualTotal(e.target.value)}
+                        placeholder="Totale manuale (€)"
+                        style={{
+                          ...miniInput,
+                          width: 180,
+                        }}
+                      />
+                      <div style={pill}>Imponibile: € {fmtEuro(effectiveTotals.subtotal)}</div>
+                      <div style={{ ...pill, fontWeight: 950 }}>Totale: € {fmtEuro(effectiveTotals.total)}</div>
                     </div>
                   </div>
 

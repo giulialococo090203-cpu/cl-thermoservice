@@ -21,6 +21,8 @@ export default function EmployerQuoteBuilderSection({
   selectedClauses,
   setSelectedClauses,
   optionalClauses,
+  manualTotal,
+  setManualTotal,
   onCreate,
   onClose,
 }) {
@@ -235,7 +237,21 @@ export default function EmployerQuoteBuilderSection({
               + Aggiungi voce
             </button>
 
-            <div style={{ marginLeft: "auto", display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <div
+              style={{
+                marginLeft: "auto",
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              <input
+                value={manualTotal}
+                onChange={(e) => setManualTotal(e.target.value)}
+                placeholder="Totale manuale (€)"
+                style={{ ...miniInput, width: 180 }}
+              />
               <div style={pill}>Imponibile: € {totals.subtotal.toFixed(2)}</div>
               <div style={{ ...pill, fontWeight: 950 }}>Totale: € {totals.total.toFixed(2)}</div>
             </div>
