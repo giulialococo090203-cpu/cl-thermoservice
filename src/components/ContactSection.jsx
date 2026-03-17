@@ -219,7 +219,7 @@ export default function ContactSection() {
               <div style={{ minWidth: 0 }}>
                 <div className="serviceTitle">Orari</div>
                 <div style={{ fontWeight: 900, fontSize: "clamp(16px, 3.8vw, 20px)", lineHeight: 1.35 }}>
-                  Lun–Ven 8:00–18:00 | Sab 8:00–13:00
+                  Lun–Ven 08:30–13:00 | 14:30–18:00 | Sab 08:30–13:00
                 </div>
               </div>
             </div>

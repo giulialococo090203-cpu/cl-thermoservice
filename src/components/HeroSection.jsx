@@ -177,7 +177,7 @@ export default function HeroSection() {
             }}
           >
             <Clock size={18} />
-            Lun–Ven 8–18 | Sab 8–13
+            Lun–Ven 08:30–13:00 / 14:30–18:00 | Sab 08:30–13:00
           </div>
         </Reveal>
       </div>
