@@ -61,6 +61,7 @@ export default function AdminBrands() {
       cursor: "pointer",
       whiteSpace: "nowrap",
     };
+
     if (variant === "dark") {
       return {
         ...base,
@@ -69,9 +70,15 @@ export default function AdminBrands() {
         border: "1px solid #0b1224",
       };
     }
+
     if (variant === "ghost") {
-      return { ...base, background: "#fff", color: "#0b1224" };
+      return {
+        ...base,
+        background: "#fff",
+        color: "#0b1224",
+      };
     }
+
     if (variant === "soft") {
       return {
         ...base,
@@ -80,6 +87,7 @@ export default function AdminBrands() {
         border: "1px solid rgba(99,102,241,.25)",
       };
     }
+
     if (variant === "danger") {
       return {
         ...base,
@@ -88,6 +96,7 @@ export default function AdminBrands() {
         border: "1px solid #fecaca",
       };
     }
+
     return base;
   };
 
@@ -112,6 +121,7 @@ export default function AdminBrands() {
         const normalized = fromDb
           .map(normalizeBrand)
           .filter((b) => b.name && b.logo);
+
         setBrands(normalized.length ? normalized : DEFAULT_BRANDS);
       } else {
         setBrands(DEFAULT_BRANDS);
@@ -133,7 +143,9 @@ export default function AdminBrands() {
   }, []);
 
   const updateBrand = (index, field, value) => {
-    setBrands((prev) => prev.map((b, i) => (i === index ? { ...b, [field]: value } : b)));
+    setBrands((prev) =>
+      prev.map((b, i) => (i === index ? { ...b, [field]: value } : b))
+    );
   };
 
   const addBrand = () => {
@@ -229,9 +241,11 @@ export default function AdminBrands() {
 
   return (
     <div style={cardStyle}>
-      <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>Marchi</div>
+      <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
+        Marchi
+      </div>
       <div style={{ marginTop: 6, color: "#475569", fontWeight: 800 }}>
-        Qui puoi modificare i marchi della Hero, caricare i loghi e inserire il link al sito ufficiale.
+        Qui puoi modificare i marchi della Hero, caricare direttamente i loghi e inserire il link del sito ufficiale.
       </div>
 
       {ok && (
@@ -267,7 +281,9 @@ export default function AdminBrands() {
       )}
 
       {loading ? (
-        <div style={{ marginTop: 14, fontWeight: 900, color: "#0b1224" }}>Caricamento…</div>
+        <div style={{ marginTop: 14, fontWeight: 900, color: "#0b1224" }}>
+          Caricamento…
+        </div>
       ) : (
         <>
           <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
@@ -325,7 +341,11 @@ export default function AdminBrands() {
                   />
                 </label>
 
-                <button style={btn("danger")} type="button" onClick={() => removeBrand(i)}>
+                <button
+                  style={btn("danger")}
+                  type="button"
+                  onClick={() => removeBrand(i)}
+                >
                   Elimina
                 </button>
               </div>
