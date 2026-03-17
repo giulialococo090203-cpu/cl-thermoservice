@@ -12,7 +12,7 @@ export default function Navbar() {
       ["#certificazioni", "Certificazioni"],
       ["#lavori", "Lavori"],
       ["#recensioni", "Recensioni"],
-      ["#link-utili", "Link utili"], // ✅ NUOVO
+      ["#link-utili", "Link utili"],
       ["#preventivo", "Preventivo"],
       ["#contatti", "Contatti"],
     ],
@@ -27,7 +27,6 @@ export default function Navbar() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // blocca scroll pagina quando menu mobile è aperto
   useEffect(() => {
     const prev = document.body.style.overflow;
     if (open) document.body.style.overflow = "hidden";
@@ -50,10 +49,11 @@ export default function Navbar() {
         style={{
           background: "rgba(255,255,255,0.92)",
           backdropFilter: "blur(10px)",
-          padding: "14px 34px",
+          padding: "12px 20px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          gap: 12,
           boxShadow: "0 8px 26px rgba(15,23,42,0.08)",
           position: "sticky",
           top: 0,
@@ -61,40 +61,45 @@ export default function Navbar() {
           borderBottom: "1px solid rgba(15,23,42,0.06)",
         }}
       >
-        {/* LOGO */}
         <a
           href="#hero"
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 12,
+            gap: 10,
             textDecoration: "none",
             color: "inherit",
+            minWidth: 0,
+            flex: "1 1 auto",
           }}
         >
           <img
             src="/favicon.png"
             alt="Thermoservice"
             style={{
-              width: 46,
-              height: 46,
+              width: 42,
+              height: 42,
               borderRadius: 12,
               boxShadow: "0 10px 22px rgba(15,23,42,0.10)",
+              flex: "0 0 auto",
             }}
           />
           <div
             style={{
               fontWeight: 1000,
-              fontSize: 26,
+              fontSize: 24,
               letterSpacing: "-0.02em",
               lineHeight: 1,
+              minWidth: 0,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
           >
             Thermoservice
           </div>
         </a>
 
-        {/* MENU DESKTOP */}
         <nav className="navLinks" style={{ display: "flex", gap: 22, alignItems: "center" }}>
           {links.map(([href, label]) => (
             <a key={href} href={href}>
@@ -103,10 +108,9 @@ export default function Navbar() {
           ))}
         </nav>
 
-        {/* CTA + Mobile button */}
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flex: "0 0 auto" }}>
           <a
-            className="btnAnim"
+            className="btnAnim navCallBtn"
             href="tel:091406911"
             style={{
               padding: "10px 14px",
@@ -118,40 +122,57 @@ export default function Navbar() {
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
+              whiteSpace: "nowrap",
             }}
           >
-            <PhoneCall size={18} /> Chiama
+            <PhoneCall size={18} /> <span className="navCallText">Chiama</span>
           </a>
 
           <button
             onClick={() => setOpen(true)}
             aria-label="Apri menu"
             style={{
-              width: 46,
-              height: 46,
-              borderRadius: 16,
+              width: 44,
+              height: 44,
+              borderRadius: 14,
               border: "1px solid rgba(15,23,42,0.10)",
               background: "rgba(255,255,255,0.92)",
               cursor: "pointer",
               display: "none",
               alignItems: "center",
               justifyContent: "center",
+              flex: "0 0 auto",
             }}
           >
             <Menu size={22} />
           </button>
         </div>
 
-        {/* Responsive: nascondi desktop menu su mobile */}
         <style>{`
           @media(max-width: 980px){
             .navLinks{ display:none !important; }
             header button[aria-label="Apri menu"]{ display:flex !important; }
           }
+
+          @media(max-width: 640px){
+            .navCallText{ display:none; }
+            .navCallBtn{
+              width: 44px !important;
+              height: 44px !important;
+              padding: 0 !important;
+              justify-content: center !important;
+              border-radius: 14px !important;
+            }
+          }
+
+          @media(max-width: 480px){
+            header.navAnim{
+              padding: 10px 12px !important;
+            }
+          }
         `}</style>
       </header>
 
-      {/* MOBILE MENU */}
       {open && (
         <div
           onClick={close}
@@ -174,7 +195,7 @@ export default function Navbar() {
               background:
                 "radial-gradient(900px 340px at 10% 0%, rgba(31,75,143,.10), transparent 60%), rgba(255,255,255,.96)",
               borderLeft: "1px solid rgba(15,23,42,.10)",
-              padding: 18,
+              padding: 16,
               display: "flex",
               flexDirection: "column",
               overflow: "hidden",
@@ -182,7 +203,6 @@ export default function Navbar() {
               animation: "slideIn 220ms ease both",
             }}
           >
-            {/* top */}
             <div
               style={{
                 display: "flex",
@@ -191,7 +211,7 @@ export default function Navbar() {
                 gap: 12,
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                 <img
                   src="/favicon.png"
                   alt="Thermoservice"
@@ -200,18 +220,29 @@ export default function Navbar() {
                     height: 40,
                     borderRadius: 12,
                     boxShadow: "0 10px 20px rgba(15,23,42,.10)",
+                    flex: "0 0 auto",
                   }}
                 />
-                <div style={{ fontWeight: 1000, letterSpacing: "-0.02em" }}>Thermoservice</div>
+                <div
+                  style={{
+                    fontWeight: 1000,
+                    letterSpacing: "-0.02em",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  Thermoservice
+                </div>
               </div>
 
               <button
                 onClick={close}
                 aria-label="Chiudi menu"
                 style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 16,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
                   border: "1px solid rgba(15,23,42,0.10)",
                   background: "white",
                   cursor: "pointer",
@@ -225,7 +256,6 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* divider */}
             <div
               style={{
                 marginTop: 14,
@@ -234,7 +264,6 @@ export default function Navbar() {
               }}
             />
 
-            {/* area scrollabile */}
             <div
               style={{
                 marginTop: 14,
@@ -262,15 +291,15 @@ export default function Navbar() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    minWidth: 0,
                   }}
                 >
-                  <span>{label}</span>
-                  <span style={{ opacity: 0.55, fontWeight: 900 }}>→</span>
+                  <span style={{ minWidth: 0 }}>{label}</span>
+                  <span style={{ opacity: 0.55, fontWeight: 900, flex: "0 0 auto" }}>→</span>
                 </a>
               ))}
             </div>
 
-            {/* CTA bottom fixed */}
             <div style={{ marginTop: 14 }}>
               <div
                 style={{

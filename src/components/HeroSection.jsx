@@ -25,12 +25,11 @@ export default function HeroSection() {
         position: "relative",
         borderRadius: 32,
         overflow: "hidden",
-        margin: "22px auto 0",
+        margin: "18px auto 0",
         maxWidth: 1180,
         boxShadow: "0 24px 70px rgba(15,23,42,0.16)",
       }}
     >
-      {/* slider immagini */}
       <div style={{ position: "absolute", inset: 0 }}>
         {images.map((src, i) => (
           <div
@@ -50,7 +49,6 @@ export default function HeroSection() {
         ))}
       </div>
 
-      {/* overlay */}
       <div
         style={{
           position: "absolute",
@@ -60,24 +58,24 @@ export default function HeroSection() {
         }}
       />
 
-      {/* contenuto hero */}
       <div
         className="container hero-main-content"
         style={{
           position: "relative",
           zIndex: 2,
           maxWidth: 1180,
-          padding: "84px 22px 140px",
+          padding: "76px 22px 120px",
         }}
       >
         <Reveal>
           <div
-            className="pill"
+            className="pill hero-badge-mobile"
             style={{
               marginBottom: 18,
               display: "inline-flex",
               alignItems: "center",
               gap: 10,
+              maxWidth: "100%",
             }}
           >
             <ShieldCheck size={18} />
@@ -90,11 +88,12 @@ export default function HeroSection() {
             style={{
               color: "white",
               fontSize: 54,
-              lineHeight: 1.06,
+              lineHeight: 1.04,
               letterSpacing: "-0.03em",
               margin: "0 0 16px",
               fontWeight: 1000,
               maxWidth: 860,
+              textWrap: "balance",
             }}
           >
             Assistenza caldaie
@@ -108,7 +107,7 @@ export default function HeroSection() {
             style={{
               color: "rgba(255,255,255,0.82)",
               fontSize: 18,
-              maxWidth: 860,
+              maxWidth: 760,
               margin: "0 0 26px",
               fontWeight: 650,
               lineHeight: 1.6,
@@ -122,7 +121,7 @@ export default function HeroSection() {
         <Reveal>
           <div className="hero-cta-row" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <a
-              className="btnAnim"
+              className="btnAnim hero-cta-btn"
               href="tel:091406911"
               style={{
                 padding: "14px 18px",
@@ -133,6 +132,7 @@ export default function HeroSection() {
                 textDecoration: "none",
                 display: "inline-flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: 10,
               }}
             >
@@ -141,7 +141,7 @@ export default function HeroSection() {
             </a>
 
             <a
-              className="btnAnim"
+              className="btnAnim hero-cta-btn"
               href="#servizi"
               style={{
                 padding: "14px 18px",
@@ -153,6 +153,7 @@ export default function HeroSection() {
                 border: "1px solid rgba(255,255,255,0.35)",
                 display: "inline-flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: 10,
               }}
             >
@@ -164,6 +165,7 @@ export default function HeroSection() {
 
         <Reveal>
           <div
+            className="hero-hours"
             style={{
               marginTop: 22,
               color: "rgba(255,255,255,0.75)",
@@ -171,6 +173,7 @@ export default function HeroSection() {
               display: "flex",
               alignItems: "center",
               gap: 10,
+              flexWrap: "wrap",
             }}
           >
             <Clock size={18} />
@@ -179,13 +182,12 @@ export default function HeroSection() {
         </Reveal>
       </div>
 
-      {/* fascia marchi */}
       <div
         className="hero-brands-wrap"
         style={{
           position: "relative",
-          marginTop: -140,
-          padding: "0 18px 24px",
+          marginTop: -116,
+          padding: "0 18px 22px",
           zIndex: 3,
         }}
       >
@@ -201,49 +203,80 @@ export default function HeroSection() {
 
         @media (max-width: 820px){
           #hero .hero-main-content{
-            padding: 64px 18px 120px !important;
+            padding: 60px 18px 98px !important;
           }
 
           #hero h1{
-            font-size: 42px !important;
+            font-size: 40px !important;
             max-width: 100% !important;
+          }
+
+          #hero .hero-brands-wrap{
+            margin-top: -86px !important;
           }
         }
 
         @media (max-width: 640px){
           #hero{
             border-radius: 24px !important;
-            margin-top: 16px !important;
+            margin-top: 14px !important;
           }
 
           #hero .hero-main-content{
-            padding: 56px 16px 80px !important;
+            padding: 44px 16px 72px !important;
           }
 
           #hero h1{
-            font-size: 34px !important;
-            line-height: 1.04 !important;
+            font-size: 32px !important;
+            line-height: 1.06 !important;
+            margin-bottom: 12px !important;
           }
 
           #hero p{
-            font-size: 16px !important;
+            font-size: 15px !important;
             line-height: 1.55 !important;
             max-width: 100% !important;
+            margin-bottom: 20px !important;
+          }
+
+          #hero .hero-cta-row{
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            width: 100% !important;
+          }
+
+          #hero .hero-cta-btn{
+            width: 100% !important;
+          }
+
+          #hero .hero-hours{
+            font-size: 14px !important;
+            line-height: 1.4 !important;
           }
 
           #hero .hero-brands-wrap{
-            margin-top: -70px !important;
+            margin-top: -56px !important;
             padding: 0 12px 14px !important;
+          }
+
+          #hero .hero-badge-mobile{
+            font-size: 13px !important;
+            line-height: 1.35 !important;
           }
         }
 
         @media (max-width: 420px){
           #hero h1{
-            font-size: 30px !important;
+            font-size: 28px !important;
+          }
+
+          #hero .hero-main-content{
+            padding: 40px 14px 64px !important;
           }
 
           #hero .hero-brands-wrap{
-            margin-top: -40px !important;
+            margin-top: -42px !important;
+            padding: 0 10px 10px !important;
           }
         }
       `}</style>

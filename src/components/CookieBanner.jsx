@@ -123,7 +123,7 @@ export default function CookieBanner() {
       display: "flex",
       alignItems: "flex-end",
       justifyContent: "center",
-      padding: 16,
+      padding: 12,
     }),
     []
   );
@@ -136,7 +136,7 @@ export default function CookieBanner() {
       color: "#0f172a",
       boxShadow: "0 24px 80px rgba(2,6,23,0.28)",
       border: "1px solid rgba(15,23,42,0.08)",
-      padding: 22,
+      padding: 20,
     }),
     []
   );
@@ -150,6 +150,7 @@ export default function CookieBanner() {
     fontWeight: 900,
     cursor: "pointer",
     minHeight: 50,
+    width: "100%",
   };
 
   const secondaryButtonStyle = {
@@ -161,6 +162,7 @@ export default function CookieBanner() {
     fontWeight: 900,
     cursor: "pointer",
     minHeight: 50,
+    width: "100%",
   };
 
   const neutralButtonStyle = {
@@ -172,6 +174,7 @@ export default function CookieBanner() {
     fontWeight: 900,
     cursor: "pointer",
     minHeight: 50,
+    width: "100%",
   };
 
   if (!mounted) return null;
@@ -182,6 +185,7 @@ export default function CookieBanner() {
         <div style={overlayStyle} role="dialog" aria-modal="true" aria-labelledby="cookie-banner-title">
           <div style={panelStyle}>
             <div
+              className="cookieBannerGrid"
               style={{
                 display: "grid",
                 gap: 18,
@@ -194,9 +198,10 @@ export default function CookieBanner() {
                   id="cookie-banner-title"
                   style={{
                     margin: 0,
-                    fontSize: "clamp(22px, 3vw, 30px)",
+                    fontSize: "clamp(20px, 4vw, 30px)",
                     fontWeight: 900,
                     letterSpacing: "-0.03em",
+                    lineHeight: 1.1,
                   }}
                 >
                   Gestione dei cookie
@@ -206,7 +211,7 @@ export default function CookieBanner() {
                   style={{
                     margin: "12px 0 0",
                     color: "#334155",
-                    lineHeight: 1.7,
+                    lineHeight: 1.65,
                     fontSize: 15,
                   }}
                 >
@@ -255,7 +260,7 @@ export default function CookieBanner() {
 
             <style>{`
               @media (max-width: 820px) {
-                [role="dialog"] > div > div {
+                .cookieBannerGrid {
                   grid-template-columns: 1fr !important;
                 }
               }
@@ -275,7 +280,7 @@ export default function CookieBanner() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: 16,
+            padding: 12,
           }}
           role="dialog"
           aria-modal="true"
@@ -291,15 +296,18 @@ export default function CookieBanner() {
               color: "#0f172a",
               boxShadow: "0 24px 80px rgba(2,6,23,0.28)",
               border: "1px solid rgba(15,23,42,0.08)",
-              padding: 22,
+              padding: 18,
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center" }}>
+            <div
+              className="cookiePrefTop"
+              style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center", flexWrap: "wrap" }}
+            >
               <h2
                 id="cookie-preferences-title"
                 style={{
                   margin: 0,
-                  fontSize: "clamp(22px, 3vw, 30px)",
+                  fontSize: "clamp(20px, 4vw, 30px)",
                   fontWeight: 900,
                   letterSpacing: "-0.03em",
                 }}
@@ -327,7 +335,7 @@ export default function CookieBanner() {
               </button>
             </div>
 
-            <p style={{ marginTop: 12, color: "#334155", lineHeight: 1.7 }}>
+            <p style={{ marginTop: 12, color: "#334155", lineHeight: 1.65 }}>
               Puoi scegliere quali categorie attivare. I cookie necessari restano sempre attivi perché servono
               al funzionamento del sito.
             </p>
@@ -361,6 +369,7 @@ export default function CookieBanner() {
             </div>
 
             <div
+              className="cookiePrefActions"
               style={{
                 display: "flex",
                 gap: 10,
@@ -380,6 +389,15 @@ export default function CookieBanner() {
                 Accetta tutti
               </button>
             </div>
+
+            <style>{`
+              @media (max-width: 640px){
+                .cookiePrefActions{
+                  display: grid !important;
+                  grid-template-columns: 1fr !important;
+                }
+              }
+            `}</style>
           </div>
         </div>
       )}
@@ -401,7 +419,7 @@ function PreferenceRow({ title, description, checked, onChange, disabled = false
         background: "#ffffff",
       }}
     >
-      <div>
+      <div style={{ minWidth: 0 }}>
         <div style={{ fontWeight: 900, fontSize: 17 }}>{title}</div>
         <div style={{ marginTop: 6, color: "#475569", lineHeight: 1.6, fontSize: 14 }}>
           {description}

@@ -3,14 +3,10 @@ import { Star, Send } from "lucide-react";
 import { supabase } from "../supabaseClient";
 import Reveal from "./Reveal";
 
-// Expected Supabase table: public.reviews
-// Columns: id, created_at, name, rating, message (NOT NULL)
-// Optional: technician_name, reply_text, replied_at
-
 function Stars({ value, onChange, size = 18, readOnly = false }) {
   const stars = [1, 2, 3, 4, 5];
   return (
-    <div style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+    <div style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
       {stars.map((s) => {
         const filled = s <= value;
         return (
@@ -25,6 +21,7 @@ function Stars({ value, onChange, size = 18, readOnly = false }) {
               padding: 0,
               cursor: readOnly ? "default" : "pointer",
               opacity: filled ? 1 : 0.35,
+              flex: "0 0 auto",
             }}
           >
             <Star size={size} fill={filled ? "currentColor" : "none"} />
@@ -40,12 +37,10 @@ export default function ReviewsSection() {
   const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [okMsg, setOkMsg] = useState("");
-
   const [reviews, setReviews] = useState([]);
 
-  // form
   const [name, setName] = useState("");
-  const [technicianName, setTechnicianName] = useState(""); // ✅ NEW
+  const [technicianName, setTechnicianName] = useState("");
   const [rating, setRating] = useState(5);
   const [message, setMessage] = useState("");
 
@@ -76,7 +71,6 @@ export default function ReviewsSection() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const submit = async (e) => {
@@ -85,7 +79,7 @@ export default function ReviewsSection() {
     setErrorMsg("");
 
     const safeName = name.trim();
-    const safeTech = technicianName.trim(); // ✅ NEW
+    const safeTech = technicianName.trim();
     const safeMsg = message.trim();
 
     if (!safeName) return setErrorMsg("Inserisci il nome.");
@@ -95,7 +89,7 @@ export default function ReviewsSection() {
     try {
       const payload = {
         name: safeName,
-        technician_name: safeTech || null, // ✅ NEW (opzionale)
+        technician_name: safeTech || null,
         rating: Number(rating) || 5,
         message: safeMsg,
       };
@@ -105,7 +99,7 @@ export default function ReviewsSection() {
 
       setOkMsg("Recensione inviata. Grazie.");
       setName("");
-      setTechnicianName(""); // ✅ NEW reset
+      setTechnicianName("");
       setRating(5);
       setMessage("");
       await load();
@@ -122,6 +116,7 @@ export default function ReviewsSection() {
       <div style={{ width: "min(1120px, 92vw)", margin: "0 auto" }}>
         <Reveal>
           <div
+            className="reviewsTop"
             style={{
               display: "flex",
               alignItems: "flex-end",
@@ -134,9 +129,10 @@ export default function ReviewsSection() {
               <div
                 style={{
                   fontWeight: 1000,
-                  fontSize: 42,
+                  fontSize: "clamp(30px, 5vw, 42px)",
                   letterSpacing: "-0.03em",
                   color: "#0b1220",
+                  lineHeight: 1.08,
                 }}
               >
                 Recensioni
@@ -154,10 +150,11 @@ export default function ReviewsSection() {
                 background: "rgba(255,255,255,.9)",
                 boxShadow: "0 10px 26px rgba(15,23,42,.06)",
                 minWidth: 220,
+                width: "min(100%, 260px)",
               }}
             >
               <div style={{ fontWeight: 950, color: "#0b1220" }}>Media voti</div>
-              <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 6 }}>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 6, flexWrap: "wrap" }}>
                 <Stars value={Math.round(avg || 0)} readOnly size={18} />
                 <div style={{ fontWeight: 1000 }}>{avg ?? "-"}</div>
                 <div style={{ opacity: 0.65, fontWeight: 800 }}>({reviews.length})</div>
@@ -166,8 +163,7 @@ export default function ReviewsSection() {
           </div>
         </Reveal>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1.05fr .95fr", gap: 18, marginTop: 22 }}>
-          {/* LISTA */}
+        <div className="reviewsMainGrid" style={{ display: "grid", gridTemplateColumns: "1.05fr .95fr", gap: 18, marginTop: 22 }}>
           <div
             style={{
               borderRadius: 26,
@@ -209,11 +205,22 @@ export default function ReviewsSection() {
                       padding: 14,
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                      <div style={{ fontWeight: 1000, color: "#0b1220" }}>{r.name || "Cliente"}</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div
+                      className="reviewCardTop"
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                        gap: 12,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div style={{ fontWeight: 1000, color: "#0b1220", minWidth: 0 }}>
+                        {r.name || "Cliente"}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                         <Stars value={Number(r.rating) || 0} readOnly size={16} />
-                        <div style={{ fontWeight: 900, opacity: 0.75 }}>
+                        <div style={{ fontWeight: 900, opacity: 0.75, fontSize: 13 }}>
                           {new Date(r.created_at).toLocaleString("it-IT", {
                             day: "2-digit",
                             month: "2-digit",
@@ -225,14 +232,13 @@ export default function ReviewsSection() {
                       </div>
                     </div>
 
-                    {/* ✅ NEW: tecnico */}
                     {r.technician_name ? (
                       <div style={{ marginTop: 6, fontWeight: 850, color: "rgba(15,23,42,.72)" }}>
                         Tecnico: <span style={{ fontWeight: 950, color: "#0b1220" }}>{r.technician_name}</span>
                       </div>
                     ) : null}
 
-                    <div style={{ marginTop: 8, fontWeight: 750, color: "rgba(15,23,42,.80)", lineHeight: 1.45 }}>
+                    <div style={{ marginTop: 8, fontWeight: 750, color: "rgba(15,23,42,.80)", lineHeight: 1.55 }}>
                       {r.message}
                     </div>
 
@@ -249,7 +255,7 @@ export default function ReviewsSection() {
                         <div style={{ fontWeight: 1000, marginBottom: 6 }}>
                           Risposta di <span style={{ color: "#e53935" }}>CL. Thermoservice</span>
                         </div>
-                        <div style={{ fontWeight: 800, opacity: 0.85, lineHeight: 1.45 }}>{r.reply_text}</div>
+                        <div style={{ fontWeight: 800, opacity: 0.85, lineHeight: 1.5 }}>{r.reply_text}</div>
                       </div>
                     ) : null}
                   </div>
@@ -258,7 +264,6 @@ export default function ReviewsSection() {
             )}
           </div>
 
-          {/* FORM */}
           <div
             style={{
               borderRadius: 26,
@@ -268,8 +273,10 @@ export default function ReviewsSection() {
               padding: 18,
             }}
           >
-            <div style={{ fontWeight: 1000, fontSize: 26, letterSpacing: "-0.02em" }}>Lascia una recensione</div>
-            <div style={{ marginTop: 6, opacity: 0.7, fontWeight: 750 }}>
+            <div style={{ fontWeight: 1000, fontSize: "clamp(22px, 4vw, 26px)", letterSpacing: "-0.02em" }}>
+              Lascia una recensione
+            </div>
+            <div style={{ marginTop: 6, opacity: 0.7, fontWeight: 750, lineHeight: 1.5 }}>
               Aiuta altri clienti a scegliere un servizio affidabile.
             </div>
 
@@ -284,10 +291,10 @@ export default function ReviewsSection() {
                   border: "1px solid rgba(15,23,42,.12)",
                   fontWeight: 850,
                   outline: "none",
+                  width: "100%",
                 }}
               />
 
-              {/* ✅ NEW: tecnico */}
               <input
                 value={technicianName}
                 onChange={(e) => setTechnicianName(e.target.value)}
@@ -298,6 +305,7 @@ export default function ReviewsSection() {
                   border: "1px solid rgba(15,23,42,.12)",
                   fontWeight: 800,
                   outline: "none",
+                  width: "100%",
                 }}
               />
 
@@ -310,6 +318,7 @@ export default function ReviewsSection() {
                   padding: "12px 14px",
                   borderRadius: 18,
                   border: "1px solid rgba(15,23,42,.12)",
+                  flexWrap: "wrap",
                 }}
               >
                 <div style={{ fontWeight: 950, opacity: 0.9 }}>Valutazione</div>
@@ -328,6 +337,7 @@ export default function ReviewsSection() {
                   fontWeight: 800,
                   outline: "none",
                   resize: "vertical",
+                  width: "100%",
                 }}
               />
 
@@ -377,6 +387,7 @@ export default function ReviewsSection() {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 10,
+                  width: "100%",
                 }}
               >
                 <Send size={18} /> {sending ? "Invio…" : "Invia recensione"}
@@ -387,7 +398,20 @@ export default function ReviewsSection() {
 
         <style>{`
           @media (max-width: 980px){
-            #recensioni > div > div{ grid-template-columns: 1fr !important; }
+            #recensioni .reviewsMainGrid{
+              grid-template-columns: 1fr !important;
+            }
+          }
+
+          @media (max-width: 640px){
+            #recensioni{
+              padding: 54px 0 !important;
+            }
+
+            #recensioni .reviewCardTop{
+              flex-direction: column !important;
+              align-items: flex-start !important;
+            }
           }
         `}</style>
       </div>

@@ -96,6 +96,7 @@ export default function WorksGallerySection() {
                   padding: 0,
                   textAlign: "left",
                   boxShadow: "0 14px 40px rgba(15,23,42,0.10)",
+                  width: "100%",
                 }}
               >
                 {isVideo(work) ? (
@@ -146,8 +147,8 @@ export default function WorksGallerySection() {
                 )}
 
                 <div style={{ padding: 16 }}>
-                  <div style={{ fontWeight: 900, fontSize: 18 }}>{work.title}</div>
-                  <div style={{ marginTop: 8, opacity: 0.8 }}>{work.description}</div>
+                  <div style={{ fontWeight: 900, fontSize: 18, lineHeight: 1.2 }}>{work.title}</div>
+                  <div style={{ marginTop: 8, opacity: 0.8, lineHeight: 1.5 }}>{work.description}</div>
                 </div>
               </button>
             ))}
@@ -165,37 +166,43 @@ export default function WorksGallerySection() {
             display: "grid",
             placeItems: "center",
             zIndex: 5000,
-            padding: 20,
+            padding: 12,
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: "min(1000px, 95vw)",
+              width: "min(1000px, 100%)",
+              maxHeight: "92vh",
               background: "#fff",
               borderRadius: 24,
               overflow: "hidden",
               boxShadow: "0 40px 120px rgba(0,0,0,0.4)",
+              display: "flex",
+              flexDirection: "column",
             }}
           >
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
+                gap: 10,
                 padding: 14,
                 borderBottom: "1px solid rgba(15,23,42,0.08)",
+                alignItems: "center",
+                flexWrap: "wrap",
               }}
             >
-              <div style={{ fontWeight: 900 }}>{activeWork.title}</div>
+              <div style={{ fontWeight: 900, minWidth: 0 }}>{activeWork.title}</div>
 
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, flex: "0 0 auto" }}>
                 <button onClick={goPrev} style={iconBtn}><ChevronLeft size={18} /></button>
                 <button onClick={goNext} style={iconBtn}><ChevronRight size={18} /></button>
                 <button onClick={closeModal} style={iconBtn}><X size={18} /></button>
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr" }}>
+            <div className="worksModalGrid" style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", minHeight: 0 }}>
               <div style={{ background: "#000" }}>
                 {isVideo(activeWork) ? (
                   <video
@@ -224,13 +231,26 @@ export default function WorksGallerySection() {
                 )}
               </div>
 
-              <div style={{ padding: 20 }}>
-                <div style={{ fontWeight: 900, fontSize: 20 }}>{activeWork.title}</div>
+              <div style={{ padding: 20, overflowY: "auto" }}>
+                <div style={{ fontWeight: 900, fontSize: 20, lineHeight: 1.2 }}>{activeWork.title}</div>
                 <div style={{ marginTop: 14, lineHeight: 1.6 }}>
                   {activeWork.description}
                 </div>
               </div>
             </div>
+
+            <style>{`
+              @media (max-width: 780px){
+                #lavori .worksModalGrid{
+                  grid-template-columns: 1fr !important;
+                }
+
+                #lavori .worksModalGrid img,
+                #lavori .worksModalGrid video{
+                  height: min(42vh, 320px) !important;
+                }
+              }
+            `}</style>
           </div>
         </div>
       )}

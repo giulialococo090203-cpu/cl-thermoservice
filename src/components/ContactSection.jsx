@@ -17,7 +17,6 @@ export default function ContactSection() {
   const [pos, setPos] = useState(null);
   const [geoStatus, setGeoStatus] = useState("idle");
 
-  // MODAL EMAIL FORM
   const [openEmailModal, setOpenEmailModal] = useState(false);
   const [loadingEmail, setLoadingEmail] = useState(false);
   const [nome, setNome] = useState("");
@@ -65,8 +64,6 @@ export default function ContactSection() {
     setMessaggio("");
   };
 
-  // ✅ 1) salva su Supabase
-  // ✅ 2) poi apre la mail precompilata
   const submitEmailAndSave = async (e) => {
     e.preventDefault();
 
@@ -83,7 +80,6 @@ export default function ContactSection() {
 
     setLoadingEmail(true);
 
-    // ✅ SALVATAGGIO SU SUPABASE (quotes)
     const { error } = await supabase.from("quotes").insert([
       {
         nome: cleanNome,
@@ -101,18 +97,15 @@ export default function ContactSection() {
       return;
     }
 
-    // ✅ APRE MAIL (mailto) DOPO IL SALVATAGGIO
     const to = "clthermoservice@virgilio.it";
     const subject = encodeURIComponent("Richiesta informazioni / contatto dal sito");
     const body = encodeURIComponent(
       `Nome: ${cleanNome} ${cleanCognome}\nTelefono: ${cleanTel}\nEmail: ${cleanEmail}\n\nMessaggio:\n${cleanMsg}`
     );
 
-    // Chiudo modal e reset
     setOpenEmailModal(false);
     resetEmailForm();
 
-    // Apro mail
     window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
 
     alert("✅ Messaggio salvato in Admin e mail aperta per l’invio!");
@@ -141,20 +134,24 @@ export default function ContactSection() {
         </Reveal>
 
         <div className="grid2" style={{ marginTop: 26 }}>
-          {/* TELEFONO */}
           <Reveal>
-            <a className="card serviceCard cardHover" href="tel:091406911" style={{ textDecoration: "none", color: "inherit" }}>
+            <a
+              className="card serviceCard cardHover"
+              href="tel:091406911"
+              style={{ textDecoration: "none", color: "inherit", minWidth: 0 }}
+            >
               <div className="iconBox">
                 <PhoneCall size={22} />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div className="serviceTitle">Telefono</div>
-                <div style={{ fontWeight: 950, fontSize: 24 }}>091 406911</div>
+                <div style={{ fontWeight: 950, fontSize: "clamp(20px, 4vw, 24px)", lineHeight: 1.15 }}>
+                  091 406911
+                </div>
               </div>
             </a>
           </Reveal>
 
-          {/* EMAIL -> apre MODAL */}
           <Reveal>
             <button
               type="button"
@@ -166,36 +163,47 @@ export default function ContactSection() {
                 cursor: "pointer",
                 background: "transparent",
                 color: "inherit",
+                minWidth: 0,
               }}
             >
               <div className="iconBox">
                 <Mail size={22} />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div className="serviceTitle">Email</div>
-                <div style={{ fontWeight: 950, fontSize: 20 }}>clthermoservice@virgilio.it</div>
-                <div style={{ marginTop: 4, fontWeight: 700, opacity: 0.7, fontSize: 14 }}>
+                <div
+                  style={{
+                    fontWeight: 950,
+                    fontSize: "clamp(16px, 3.8vw, 20px)",
+                    lineHeight: 1.25,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  clthermoservice@virgilio.it
+                </div>
+                <div style={{ marginTop: 4, fontWeight: 700, opacity: 0.7, fontSize: 14, lineHeight: 1.4 }}>
                   Clicca per scrivere (salvata in Admin + apre Mail)
                 </div>
               </div>
             </button>
           </Reveal>
 
-          {/* INDIRIZZO */}
           <Reveal>
             <a
               className="card serviceCard cardHover"
               href={mapsPlaceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ textDecoration: "none", color: "inherit" }}
+              style={{ textDecoration: "none", color: "inherit", minWidth: 0 }}
             >
               <div className="iconBox">
                 <MapPin size={22} />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div className="serviceTitle">Indirizzo</div>
-                <div style={{ fontWeight: 900, fontSize: 20 }}>{DEST.label}</div>
+                <div style={{ fontWeight: 900, fontSize: "clamp(16px, 3.8vw, 20px)", lineHeight: 1.35 }}>
+                  {DEST.label}
+                </div>
                 <div style={{ fontSize: 14, opacity: 0.7, marginTop: 4, fontWeight: 700 }}>
                   Clicca per aprire su Maps →
                 </div>
@@ -203,23 +211,24 @@ export default function ContactSection() {
             </a>
           </Reveal>
 
-          {/* ORARI */}
           <Reveal>
             <div className="card serviceCard cardHover">
               <div className="iconBox">
                 <Clock size={22} />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div className="serviceTitle">Orari</div>
-                <div style={{ fontWeight: 900, fontSize: 20 }}>Lun–Ven 8:00–18:00 | Sab 8:00–13:00</div>
+                <div style={{ fontWeight: 900, fontSize: "clamp(16px, 3.8vw, 20px)", lineHeight: 1.35 }}>
+                  Lun–Ven 8:00–18:00 | Sab 8:00–13:00
+                </div>
               </div>
             </div>
           </Reveal>
         </div>
 
-        {/* CTA Premium (pulite, coerenti, niente emoji, niente status geolocalizzazione) */}
         <Reveal>
           <div
+            className="contactCtaMobile"
             style={{
               marginTop: 36,
               paddingTop: 24,
@@ -245,6 +254,7 @@ export default function ContactSection() {
                 textDecoration: "none",
                 display: "inline-flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: 10,
               }}
             >
@@ -264,6 +274,7 @@ export default function ContactSection() {
                 textDecoration: "none",
                 display: "inline-flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: 10,
               }}
             >
@@ -284,6 +295,9 @@ export default function ContactSection() {
                 color: "#0b1220",
                 fontWeight: 800,
                 textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               WhatsApp
@@ -292,7 +306,6 @@ export default function ContactSection() {
         </Reveal>
       </div>
 
-      {/* MODAL EMAIL */}
       {openEmailModal && (
         <div
           onClick={() => setOpenEmailModal(false)}
@@ -304,18 +317,19 @@ export default function ContactSection() {
             display: "grid",
             placeItems: "center",
             zIndex: 4000,
-            padding: 16,
+            padding: 12,
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: "min(720px, 92vw)",
+              width: "min(720px, 100%)",
+              maxHeight: "92vh",
+              overflowY: "auto",
               background: "rgba(255,255,255,.96)",
               borderRadius: 24,
               border: "1px solid rgba(15,23,42,.12)",
               boxShadow: "0 30px 80px rgba(2,6,23,.25)",
-              overflow: "hidden",
             }}
           >
             <div
@@ -340,6 +354,7 @@ export default function ContactSection() {
                   cursor: "pointer",
                   display: "grid",
                   placeItems: "center",
+                  flex: "0 0 auto",
                 }}
                 aria-label="Chiudi"
                 type="button"
@@ -349,12 +364,12 @@ export default function ContactSection() {
             </div>
 
             <form onSubmit={submitEmailAndSave} style={{ padding: 16, display: "grid", gap: 12 }}>
-              <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
+              <div className="contactModalGrid" style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
                 <input placeholder="Nome *" value={nome} onChange={(e) => setNome(e.target.value)} style={inputStyle} />
                 <input placeholder="Cognome" value={cognome} onChange={(e) => setCognome(e.target.value)} style={inputStyle} />
               </div>
 
-              <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
+              <div className="contactModalGrid" style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
                 <input placeholder="Telefono *" value={telefono} onChange={(e) => setTelefono(e.target.value)} style={inputStyle} />
                 <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} />
               </div>
@@ -367,7 +382,10 @@ export default function ContactSection() {
                 style={{ ...inputStyle, fontWeight: 700, resize: "vertical" }}
               />
 
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <div
+                className="contactModalActions"
+                style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}
+              >
                 <button
                   type="button"
                   onClick={() => {
@@ -407,7 +425,29 @@ export default function ContactSection() {
 
             <style>{`
               @media(max-width: 820px){
-                form > div { grid-template-columns: 1fr !important; }
+                #contatti .contactModalGrid {
+                  grid-template-columns: 1fr !important;
+                }
+              }
+
+              @media(max-width: 640px){
+                #contatti .contactCtaMobile{
+                  display: grid !important;
+                  grid-template-columns: 1fr !important;
+                }
+
+                #contatti .contactCtaMobile a{
+                  width: 100% !important;
+                }
+
+                #contatti .contactModalActions{
+                  display: grid !important;
+                  grid-template-columns: 1fr !important;
+                }
+
+                #contatti .contactModalActions button{
+                  width: 100% !important;
+                }
               }
             `}</style>
           </div>

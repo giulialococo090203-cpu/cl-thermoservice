@@ -1,5 +1,4 @@
 :root{
-  /* Colors */
   --bg:#eef2f7;
   --panel:#ffffff;
   --text:#0b1220;
@@ -12,16 +11,13 @@
   --red:#d61b1b;
   --red2:#ff3b3b;
 
-  /* Shadows */
   --shadow: 0 22px 60px rgba(15,23,42,.10);
   --shadow2: 0 14px 30px rgba(15,23,42,.10);
 
-  /* Radius */
   --r16: 16px;
   --r20: 20px;
   --r28: 28px;
 
-  /* ✅ Spacing system */
   --s-2: 8px;
   --s-3: 12px;
   --s-4: 16px;
@@ -34,7 +30,6 @@
   --s-16: 64px;
   --s-18: 72px;
 
-  /* ✅ Typography */
   --fw-regular: 500;
   --fw-medium: 600;
   --fw-semibold: 700;
@@ -51,12 +46,19 @@
   --text-xl: 20px;
 }
 
-*{ box-sizing:border-box; }
-html,body{ height:100%; }
-html { scroll-behavior: smooth; }
+*,
+*::before,
+*::after{ box-sizing:border-box; }
+
+html,body,#root{ min-height:100%; }
+html{
+  scroll-behavior:smooth;
+  overflow-x:hidden;
+}
 
 body{
   margin:0;
+  overflow-x:hidden;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
   color: var(--text);
   background:
@@ -67,6 +69,19 @@ body{
   -moz-osx-font-smoothing: grayscale;
 }
 
+img,
+video{
+  max-width:100%;
+  display:block;
+}
+
+button,
+input,
+textarea,
+select{
+  font:inherit;
+}
+
 a{ color:inherit; text-decoration:none; }
 
 .container{
@@ -75,7 +90,7 @@ a{ color:inherit; text-decoration:none; }
 }
 
 .section{
-  padding: clamp(64px, 7vw, 92px) 0;
+  padding: clamp(56px, 7vw, 92px) 0;
 }
 
 .sectionHeader{
@@ -94,15 +109,15 @@ a{ color:inherit; text-decoration:none; }
 
 .h2{
   margin: 12px 0 10px;
-  font-size: clamp(32px, 4vw, 48px);
+  font-size: clamp(30px, 4vw, 48px);
   letter-spacing: var(--tracking-tight);
   line-height: 1.08;
   font-weight: var(--fw-black);
   position: relative;
   display: inline-block;
+  text-wrap: balance;
 }
 
-/* ✅ piccola linea premium sotto i titoli (fa molto landing di livello) */
 .h2::after{
   content:"";
   display:block;
@@ -119,6 +134,7 @@ a{ color:inherit; text-decoration:none; }
   font-size: var(--text-lg);
   line-height: 1.75;
   font-weight: var(--fw-regular);
+  text-wrap: pretty;
 }
 
 .card{
@@ -128,14 +144,8 @@ a{ color:inherit; text-decoration:none; }
   box-shadow: 0 1px 0 rgba(15,23,42,.04);
 }
 
-/* =========================
-   ✅ VARIETA' SEZIONI (ANTI-PIATTO)
-   ========================= */
-
-/* wrapper per alternare band/normal senza toccare i componenti */
 .sectionWrap { width: 100%; }
 
-/* band più marcato ma elegante */
 .sectionBand{
   background:
     radial-gradient(900px 420px at 12% 10%, rgba(31,75,143,.10), transparent 60%),
@@ -145,7 +155,6 @@ a{ color:inherit; text-decoration:none; }
   border-bottom: 1px solid rgba(15,23,42,.06);
 }
 
-/* separatore sottile tra macro-blocchi */
 .sectionDivider{
   width: min(1120px, 92vw);
   height: 1px;
@@ -153,16 +162,11 @@ a{ color:inherit; text-decoration:none; }
   background: linear-gradient(90deg, transparent, rgba(15,23,42,.10), transparent);
 }
 
-/* accenti alternati */
 .section--blue .kicker{ color: var(--blue); }
 .section--blue .h2::after{ background: rgba(31,75,143,.85); }
 
 .section--red .kicker{ color: var(--red); }
 .section--red .h2::after{ background: rgba(214,27,27,.85); }
-
-/* =========================
-   ✅ HOVER / MICRO-INTERAZIONI
-   ========================= */
 
 @keyframes navDrop {
   from { opacity: 0; transform: translateY(-14px); }
@@ -223,9 +227,6 @@ a{ color:inherit; text-decoration:none; }
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
 }
 
-/* =========================
-   ✅ HERO (come avevi)
-   ========================= */
 .heroWrap{ padding: 22px 0 0; }
 
 .hero{
@@ -281,6 +282,7 @@ a{ color:inherit; text-decoration:none; }
   font-weight: var(--fw-black);
   color:#fff;
   text-shadow: 0 12px 40px rgba(0,0,0,.32);
+  text-wrap: balance;
 }
 
 .h1 .red{ color: var(--red2); }
@@ -338,13 +340,6 @@ a{ color:inherit; text-decoration:none; }
   font-weight: var(--fw-semibold);
 }
 
-@media(max-width:720px){
-  .heroInner{ padding: 66px 0 56px; }
-}
-
-/* =========================
-   SERVICES
-   ========================= */
 .servicesPanel{
   background: rgba(255,255,255,.55);
   border: 1px solid rgba(15,23,42,.06);
@@ -370,6 +365,7 @@ a{ color:inherit; text-decoration:none; }
   gap: 16px;
   align-items:flex-start;
   transition: transform .14s ease, box-shadow .14s ease, background .14s ease;
+  min-width: 0;
 }
 .serviceCard:hover{
   transform: translateY(-2px);
@@ -402,9 +398,6 @@ a{ color:inherit; text-decoration:none; }
   font-weight: var(--fw-regular);
 }
 
-/* =========================
-   ABOUT
-   ========================= */
 .aboutWrap{
   background: rgba(255,255,255,.55);
   border-top: 1px solid rgba(15,23,42,.06);
@@ -468,9 +461,6 @@ a{ color:inherit; text-decoration:none; }
 .statsNum{ font-size: 40px; font-weight: var(--fw-black); }
 .statsLbl{ opacity:.85; font-weight: var(--fw-bold); }
 
-/* =========================
-   CONTACT
-   ========================= */
 .contactWrap{ background: transparent; }
 .contactHeader{ text-align:left; max-width: 980px; }
 
@@ -506,7 +496,7 @@ a{ color:inherit; text-decoration:none; }
   flex: 0 0 auto;
 }
 
-.infoText{ display:flex; flex-direction:column; gap: 6px; }
+.infoText{ display:flex; flex-direction:column; gap: 6px; min-width: 0; }
 
 .infoK{
   margin:0;
@@ -544,9 +534,6 @@ a{ color:inherit; text-decoration:none; }
 }
 .callBtn:hover{ filter: brightness(.96); }
 
-/* =========================
-   FOOTER
-   ========================= */
 .footer{
   margin-top: 34px;
   background: #173a6f;
@@ -561,12 +548,10 @@ a{ color:inherit; text-decoration:none; }
   align-items:center;
   gap: 14px;
   color: rgba(255,255,255,.92);
+  text-align:center;
 }
 .footerCopy{ opacity:.72; font-weight: var(--fw-bold); }
 
-/* =========================
-   REVEAL
-   ========================= */
 .reveal{
   opacity: 0;
   transform: translateY(18px);
@@ -581,7 +566,6 @@ a{ color:inherit; text-decoration:none; }
   .reveal{ opacity: 1; transform: none; transition: none; }
 }
 
-/* Nice blocks */
 .softPanel{
   background: rgba(255,255,255,.55);
   border: 1px solid rgba(15,23,42,.06);
@@ -610,7 +594,6 @@ a{ color:inherit; text-decoration:none; }
   color: #334155;
 }
 
-/* Logos / brands */
 .brandGrid{
   margin-top: 34px;
   display: grid;
@@ -645,7 +628,6 @@ a{ color:inherit; text-decoration:none; }
   font-weight: var(--fw-black);
 }
 
-/* Quick quote inputs */
 .input{
   width: 100%;
   height: 48px;
@@ -676,15 +658,14 @@ a{ color:inherit; text-decoration:none; }
   box-shadow: 0 0 0 4px rgba(31,75,143,.12);
 }
 
-/* WhatsApp floating button */
 .waFab{
   position: fixed;
-  right: 18px;
-  bottom: 18px;
+  right: 16px;
+  bottom: 16px;
   z-index: 90;
-  width: 58px;
-  height: 58px;
-  border-radius: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
   display: grid;
   place-items: center;
   background: #25D366;
@@ -697,8 +678,8 @@ a{ color:inherit; text-decoration:none; }
 
 .waHint{
   position: fixed;
-  right: 86px;
-  bottom: 26px;
+  right: 82px;
+  bottom: 24px;
   z-index: 89;
   padding: 10px 12px;
   border-radius: 14px;
@@ -708,8 +689,8 @@ a{ color:inherit; text-decoration:none; }
   font-weight: var(--fw-bold);
   color: #0b1220;
 }
-@media (max-width: 520px){ .waHint{ display:none; } }
-/* ========== PREMIUM DEPTH (anti-piatto) ========== */
+@media (max-width: 640px){ .waHint{ display:none; } }
+
 .card, .serviceCard {
   position: relative;
   overflow: hidden;
@@ -733,4 +714,95 @@ a{ color:inherit; text-decoration:none; }
   border: 1px solid rgba(255,255,255,.45);
   mix-blend-mode: overlay;
   opacity: .40;
+}
+
+@media (max-width: 980px){
+  .container{
+    width:min(1120px, calc(100% - 24px));
+  }
+
+  .section{
+    padding: clamp(48px, 8vw, 72px) 0;
+  }
+
+  .softPanel,
+  .servicesPanel{
+    padding: 42px 0;
+    border-radius: 24px;
+  }
+}
+
+@media (max-width: 720px){
+  .container{
+    width:min(1120px, calc(100% - 20px));
+  }
+
+  .h2{
+    font-size: clamp(26px, 8vw, 34px);
+    line-height: 1.1;
+  }
+
+  .lead{
+    font-size: 16px;
+    line-height: 1.65;
+  }
+
+  .serviceCard{
+    padding: 16px;
+    gap: 12px;
+    border-radius: 18px;
+  }
+
+  .iconBox{
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+  }
+
+  .serviceTitle{
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  .serviceDesc{
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .footer{
+    padding: 38px 0 32px;
+    border-top-left-radius: 22px;
+    border-top-right-radius: 22px;
+  }
+}
+
+@media (max-width: 560px){
+  .section{
+    padding: 44px 0;
+  }
+
+  .softPanel,
+  .servicesPanel{
+    padding: 28px 0;
+    border-radius: 20px;
+  }
+
+  .h2::after{
+    width: 52px;
+    margin-top: 12px;
+  }
+
+  .pill{
+    font-size: 13px;
+    line-height: 1.35;
+    padding: 9px 12px;
+  }
+
+  .waFab{
+    width: 54px;
+    height: 54px;
+    right: 12px;
+    bottom: 12px;
+    border-radius: 16px;
+  }
 }
