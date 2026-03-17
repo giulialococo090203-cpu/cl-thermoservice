@@ -1,15 +1,32 @@
-// src/components/BrandsSection.jsx
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 
 const DEFAULT_BRANDS = [
-  { name: "Chaffoteaux", logo: "/chaffoteaux.png" },
-  { name: "Bosch", logo: "/bosch.png" },
-  { name: "Toshiba", logo: "/toshiba.png" },
-  { name: "Maxa", logo: "/maxa.png" },
-  { name: "Innova", logo: "/innova.png" },
-  { name: "Cordivari", logo: "/cordivari.png" },
+  { name: "Chaffoteaux", logo: "/chaffoteaux.png", url: "" },
+  { name: "Bosch", logo: "/bosch.png", url: "" },
+  { name: "Toshiba", logo: "/toshiba.png", url: "" },
+  { name: "Maxa", logo: "/maxa.png", url: "" },
+  { name: "Innova", logo: "/innova.png", url: "" },
+  { name: "Cordivari", logo: "/cordivari.png", url: "" },
 ];
+
+function normalizeBrand(brand) {
+  return {
+    name: String(brand?.name || "").trim(),
+    logo: String(brand?.logo || "").trim(),
+    url: String(brand?.url || "").trim(),
+  };
+}
+
+function isValidUrl(url) {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 export default function BrandsSection({ variant = "hero" }) {
   const [brands, setBrands] = useState(DEFAULT_BRANDS);
@@ -31,7 +48,11 @@ export default function BrandsSection({ variant = "hero" }) {
         const dbBrands = data?.payload?.brands;
 
         if (alive && Array.isArray(dbBrands) && dbBrands.length > 0) {
-          setBrands(dbBrands);
+          const normalized = dbBrands
+            .map(normalizeBrand)
+            .filter((b) => b.name && b.logo);
+
+          setBrands(normalized.length ? normalized : DEFAULT_BRANDS);
         } else if (alive) {
           setBrands(DEFAULT_BRANDS);
         }
@@ -245,83 +266,104 @@ export default function BrandsSection({ variant = "hero" }) {
           </div>
 
           <div className="brandsGrid" style={gridStyle}>
-            {brands.map((brand, index) => (
-              <div
-                key={`${brand.name}-${index}`}
-                className={isHero ? "brandCardHero" : ""}
-                style={{
-                  borderRadius: 18,
-                  width: "100%",
-                  minHeight: isHero ? 168 : 78,
-                  padding: isHero ? "16px 12px" : "14px 12px",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 10,
-                  background: isHero ? "rgba(255,255,255,0.06)" : "#fff",
-                  border: isHero
-                    ? "1px solid rgba(255,255,255,0.14)"
-                    : "1px solid rgba(15,23,42,0.06)",
-                  boxShadow: isHero
-                    ? "0 10px 26px rgba(0,0,0,0.18)"
-                    : "0 10px 30px rgba(15,23,42,0.05)",
-                  transition: "transform .18s ease, box-shadow .18s ease",
-                  cursor: "default",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = isHero
-                    ? "0 16px 40px rgba(0,0,0,0.26)"
-                    : "0 18px 50px rgba(15,23,42,0.10)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = isHero
-                    ? "0 10px 26px rgba(0,0,0,0.18)"
-                    : "0 10px 30px rgba(15,23,42,0.05)";
-                }}
-              >
-                <div
-                  className={isHero ? "brandLogoWrapHero" : ""}
+            {brands.map((brand, index) => {
+              const safeBrand = normalizeBrand(brand);
+              const clickable = isValidUrl(safeBrand.url);
+              const Tag = clickable ? "a" : "div";
+
+              return (
+                <Tag
+                  key={`${safeBrand.name}-${index}`}
+                  className={isHero ? "brandCardHero" : ""}
+                  href={clickable ? safeBrand.url : undefined}
+                  target={clickable ? "_blank" : undefined}
+                  rel={clickable ? "noopener noreferrer" : undefined}
+                  aria-label={clickable ? `Apri sito ${safeBrand.name}` : undefined}
                   style={{
+                    borderRadius: 18,
                     width: "100%",
-                    height: isHero ? 56 : 50,
+                    minHeight: isHero ? 168 : 78,
+                    padding: isHero ? "16px 12px" : "14px 12px",
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
+                    gap: 10,
+                    background: isHero ? "rgba(255,255,255,0.06)" : "#fff",
+                    border: isHero
+                      ? "1px solid rgba(255,255,255,0.14)"
+                      : "1px solid rgba(15,23,42,0.06)",
+                    boxShadow: isHero
+                      ? "0 10px 26px rgba(0,0,0,0.18)"
+                      : "0 10px 30px rgba(15,23,42,0.05)",
+                    transition: "transform .18s ease, box-shadow .18s ease, background .18s ease",
+                    cursor: clickable ? "pointer" : "default",
+                    textDecoration: "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = isHero
+                      ? "0 16px 40px rgba(0,0,0,0.26)"
+                      : "0 18px 50px rgba(15,23,42,0.10)";
+                    if (clickable) {
+                      e.currentTarget.style.background = isHero
+                        ? "rgba(255,255,255,0.10)"
+                        : "rgba(255,255,255,0.98)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = isHero
+                      ? "0 10px 26px rgba(0,0,0,0.18)"
+                      : "0 10px 30px rgba(15,23,42,0.05)";
+                    if (clickable) {
+                      e.currentTarget.style.background = isHero
+                        ? "rgba(255,255,255,0.06)"
+                        : "#fff";
+                    }
                   }}
                 >
-                  <img
-                    className={isHero ? "brandLogoHero" : ""}
-                    src={brand.logo}
-                    alt={brand.name}
+                  <div
+                    className={isHero ? "brandLogoWrapHero" : ""}
                     style={{
-                      maxHeight: isHero ? 42 : 44,
-                      maxWidth: isHero ? 120 : 128,
-                      width: "auto",
-                      height: "auto",
-                      objectFit: "contain",
-                      filter: isHero ? "brightness(1.05) contrast(1.05)" : "none",
+                      width: "100%",
+                      height: isHero ? 56 : 50,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
-                  />
-                </div>
+                  >
+                    <img
+                      className={isHero ? "brandLogoHero" : ""}
+                      src={safeBrand.logo}
+                      alt={safeBrand.name}
+                      style={{
+                        maxHeight: isHero ? 42 : 44,
+                        maxWidth: isHero ? 120 : 128,
+                        width: "auto",
+                        height: "auto",
+                        objectFit: "contain",
+                        filter: isHero ? "brightness(1.05) contrast(1.05)" : "none",
+                      }}
+                    />
+                  </div>
 
-                <div
-                  className={isHero ? "brandNameHero" : ""}
-                  style={{
-                    fontWeight: 950,
-                    textAlign: "center",
-                    color: isHero ? "rgba(255,255,255,0.92)" : "#0b1220",
-                    fontSize: 15,
-                    lineHeight: 1.15,
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {brand.name}
-                </div>
-              </div>
-            ))}
+                  <div
+                    className={isHero ? "brandNameHero" : ""}
+                    style={{
+                      fontWeight: 950,
+                      textAlign: "center",
+                      color: isHero ? "rgba(255,255,255,0.92)" : "#0b1220",
+                      fontSize: 15,
+                      lineHeight: 1.15,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {safeBrand.name}
+                  </div>
+                </Tag>
+              );
+            })}
           </div>
 
           {isHero ? (

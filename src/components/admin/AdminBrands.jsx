@@ -1,4 +1,3 @@
-// src/components/admin/AdminBrands.jsx
 import { useEffect, useRef, useState } from "react";
 import { supabaseAdmin } from "../../supabaseAdminClient";
 
@@ -6,13 +5,21 @@ const TABLE = "brands_content";
 const BUCKET = "brands";
 
 const DEFAULT_BRANDS = [
-  { name: "Chaffoteaux", logo: "/chaffoteaux.png" },
-  { name: "Bosch", logo: "/bosch.png" },
-  { name: "Toshiba", logo: "/toshiba.png" },
-  { name: "Maxa", logo: "/maxa.png" },
-  { name: "Innova", logo: "/innova.png" },
-  { name: "Cordivari", logo: "/cordivari.png" },
+  { name: "Chaffoteaux", logo: "/chaffoteaux.png", url: "" },
+  { name: "Bosch", logo: "/bosch.png", url: "" },
+  { name: "Toshiba", logo: "/toshiba.png", url: "" },
+  { name: "Maxa", logo: "/maxa.png", url: "" },
+  { name: "Innova", logo: "/innova.png", url: "" },
+  { name: "Cordivari", logo: "/cordivari.png", url: "" },
 ];
+
+function normalizeBrand(brand) {
+  return {
+    name: String(brand?.name || "").trim(),
+    logo: String(brand?.logo || "").trim(),
+    url: String(brand?.url || "").trim(),
+  };
+}
 
 export default function AdminBrands() {
   const [brands, setBrands] = useState(DEFAULT_BRANDS);
@@ -54,12 +61,33 @@ export default function AdminBrands() {
       cursor: "pointer",
       whiteSpace: "nowrap",
     };
-    if (variant === "dark") return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
-    if (variant === "ghost") return { ...base, background: "#fff", color: "#0b1224" };
-    if (variant === "soft")
-      return { ...base, background: "#eef2ff", color: "#111827", border: "1px solid rgba(99,102,241,.25)" };
-    if (variant === "danger")
-      return { ...base, background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" };
+    if (variant === "dark") {
+      return {
+        ...base,
+        background: "#0b1224",
+        color: "#fff",
+        border: "1px solid #0b1224",
+      };
+    }
+    if (variant === "ghost") {
+      return { ...base, background: "#fff", color: "#0b1224" };
+    }
+    if (variant === "soft") {
+      return {
+        ...base,
+        background: "#eef2ff",
+        color: "#111827",
+        border: "1px solid rgba(99,102,241,.25)",
+      };
+    }
+    if (variant === "danger") {
+      return {
+        ...base,
+        background: "#fee2e2",
+        color: "#991b1b",
+        border: "1px solid #fecaca",
+      };
+    }
     return base;
   };
 
@@ -81,7 +109,10 @@ export default function AdminBrands() {
 
       const fromDb = data?.payload?.brands;
       if (Array.isArray(fromDb) && fromDb.length > 0) {
-        setBrands(fromDb);
+        const normalized = fromDb
+          .map(normalizeBrand)
+          .filter((b) => b.name && b.logo);
+        setBrands(normalized.length ? normalized : DEFAULT_BRANDS);
       } else {
         setBrands(DEFAULT_BRANDS);
       }
@@ -106,7 +137,7 @@ export default function AdminBrands() {
   };
 
   const addBrand = () => {
-    setBrands((prev) => [...prev, { name: "", logo: "" }]);
+    setBrands((prev) => [...prev, { name: "", logo: "", url: "" }]);
   };
 
   const removeBrand = (index) => {
@@ -154,10 +185,7 @@ export default function AdminBrands() {
 
     try {
       const cleanBrands = brands
-        .map((b) => ({
-          name: String(b?.name || "").trim(),
-          logo: String(b?.logo || "").trim(),
-        }))
+        .map(normalizeBrand)
         .filter((b) => b.name && b.logo);
 
       const payload = { brands: cleanBrands };
@@ -203,7 +231,7 @@ export default function AdminBrands() {
     <div style={cardStyle}>
       <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>Marchi</div>
       <div style={{ marginTop: 6, color: "#475569", fontWeight: 800 }}>
-        Qui puoi modificare i marchi della Hero e caricare direttamente i loghi.
+        Qui puoi modificare i marchi della Hero, caricare i loghi e inserire il link al sito ufficiale.
       </div>
 
       {ok && (
@@ -246,13 +274,14 @@ export default function AdminBrands() {
             {brands.map((b, i) => (
               <div
                 key={i}
+                className="adminBrandsRow"
                 style={{
                   background: "#fff",
                   border: "1px solid rgba(15,23,42,0.10)",
                   borderRadius: 18,
                   padding: 12,
                   display: "grid",
-                  gridTemplateColumns: "1fr 1.2fr 180px 120px",
+                  gridTemplateColumns: "1fr 1.2fr 1.3fr 180px 120px",
                   gap: 10,
                   alignItems: "center",
                 }}
@@ -269,6 +298,13 @@ export default function AdminBrands() {
                   value={b.logo || ""}
                   onChange={(e) => updateBrand(i, "logo", e.target.value)}
                   placeholder="URL o path logo"
+                />
+
+                <input
+                  style={inputStyle}
+                  value={b.url || ""}
+                  onChange={(e) => updateBrand(i, "url", e.target.value)}
+                  placeholder="https://sito-ufficiale.it"
                 />
 
                 <label
@@ -309,6 +345,14 @@ export default function AdminBrands() {
               Ricarica
             </button>
           </div>
+
+          <style>{`
+            @media (max-width: 1200px){
+              .adminBrandsRow{
+                grid-template-columns: 1fr !important;
+              }
+            }
+          `}</style>
         </>
       )}
     </div>
