@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Menu, X, PhoneCall, Mail, MessageCircle } from "lucide-react";
-import siteLogo from "../assets/logo.png";
+import logo from "../assets/logo.png";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -75,17 +75,16 @@ export default function Navbar() {
           }}
         >
           <img
-            src={siteLogo}
+            src={logo}
             alt="Thermoservice"
             style={{
               width: 42,
               height: 42,
               borderRadius: 12,
               boxShadow: "0 10px 22px rgba(15,23,42,0.10)",
+              flex: "0 0 auto",
               objectFit: "contain",
               background: "white",
-              padding: 4,
-              flex: "0 0 auto",
             }}
           />
           <div
@@ -217,17 +216,16 @@ export default function Navbar() {
             >
               <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                 <img
-                  src={siteLogo}
+                  src={logo}
                   alt="Thermoservice"
                   style={{
                     width: 40,
                     height: 40,
                     borderRadius: 12,
                     boxShadow: "0 10px 20px rgba(15,23,42,.10)",
+                    flex: "0 0 auto",
                     objectFit: "contain",
                     background: "white",
-                    padding: 4,
-                    flex: "0 0 auto",
                   }}
                 />
                 <div

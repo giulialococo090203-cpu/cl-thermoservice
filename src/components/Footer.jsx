@@ -1,4 +1,4 @@
-import siteLogo from "../assets/logo.png";
+import logo from "../assets/logo.png";
 
 export default function Footer() {
   const openCookiePreferences = () => {
@@ -18,7 +18,7 @@ export default function Footer() {
           }}
         >
           <img
-            src={siteLogo}
+            src={logo}
             alt="Thermoservice"
             style={{
               width: 52,
