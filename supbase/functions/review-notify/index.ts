@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -67,18 +68,26 @@ serve(async (req) => {
     const rating = Number(review.rating || 0);
     const message = String(review.message || "").trim();
 
+    const safeHtml = (value: string) =>
+      String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
     const html = `
       <div style="font-family: Arial, Helvetica, sans-serif; color: #0b1220; line-height: 1.6;">
         <h2 style="margin: 0 0 16px;">Nuova recensione ricevuta</h2>
 
-        <p><strong>Nome:</strong> ${name}</p>
+        <p><strong>Nome:</strong> ${safeHtml(name)}</p>
         <p><strong>Valutazione:</strong> ${rating}/5</p>
-        ${technician ? `<p><strong>Tecnico:</strong> ${technician}</p>` : ""}
-        <p><strong>Data:</strong> ${createdAt}</p>
+        ${technician ? `<p><strong>Tecnico:</strong> ${safeHtml(technician)}</p>` : ""}
+        <p><strong>Data:</strong> ${safeHtml(createdAt)}</p>
 
         <div style="margin-top: 18px; padding: 14px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0;">
           <strong>Messaggio recensione:</strong>
-          <div style="margin-top: 8px; white-space: pre-wrap;">${message || "-"}</div>
+          <div style="margin-top: 8px; white-space: pre-wrap;">${safeHtml(message || "-")}</div>
         </div>
       </div>
     `;
