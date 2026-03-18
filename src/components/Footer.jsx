@@ -1,3 +1,5 @@
+import siteLogo from "../assets/logo.png";
+
 export default function Footer() {
   const openCookiePreferences = () => {
     window.dispatchEvent(new Event("open-cookie-preferences"));
@@ -16,9 +18,16 @@ export default function Footer() {
           }}
         >
           <img
-            src="/favicon.png"
+            src={siteLogo}
             alt="Thermoservice"
-            style={{ width: 52, height: 52, objectFit: "contain" }}
+            style={{
+              width: 52,
+              height: 52,
+              objectFit: "contain",
+              background: "white",
+              borderRadius: 12,
+              padding: 4,
+            }}
           />
 
           <div
