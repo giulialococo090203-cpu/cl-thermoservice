@@ -73,20 +73,6 @@ export default function ReviewsSection() {
     load();
   }, []);
 
-  const sendReviewNotification = async (payload) => {
-    try {
-      const { error } = await supabase.functions.invoke("review-notify", {
-        body: payload,
-      });
-
-      if (error) {
-        console.error("Errore invio notifica recensione:", error);
-      }
-    } catch (e) {
-      console.error("Errore chiamata review-notify:", e);
-    }
-  };
-
   const submit = async (e) => {
     e.preventDefault();
     setOkMsg("");
@@ -95,7 +81,6 @@ export default function ReviewsSection() {
     const safeName = name.trim();
     const safeTech = technicianName.trim();
     const safeMsg = message.trim();
-    const safeRating = Number(rating) || 5;
 
     if (!safeName) return setErrorMsg("Inserisci il nome.");
     if (!safeMsg) return setErrorMsg("Scrivi un messaggio nella recensione.");
@@ -105,32 +90,12 @@ export default function ReviewsSection() {
       const payload = {
         name: safeName,
         technician_name: safeTech || null,
-        rating: safeRating,
+        rating: Number(rating) || 5,
         message: safeMsg,
       };
 
-      const { data, error } = await supabase
-        .from("reviews")
-        .insert([payload])
-        .select("id, created_at, name, technician_name, rating, message")
-        .single();
-
+      const { error } = await supabase.from("reviews").insert([payload]);
       if (error) throw error;
-
-      await sendReviewNotification({
-        review: {
-          id: data?.id || null,
-          created_at: data?.created_at || new Date().toISOString(),
-          name: data?.name || safeName,
-          technician_name: data?.technician_name || safeTech || null,
-          rating: data?.rating || safeRating,
-          message: data?.message || safeMsg,
-        },
-        recipients: [
-          "giulialococo090203@gmail.com",
-          "clthermoservice@virgilio.it",
-        ],
-      });
 
       setOkMsg("Recensione inviata. Grazie.");
       setName("");
