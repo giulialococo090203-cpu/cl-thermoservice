@@ -7,12 +7,10 @@ export default function AdminLinks() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
-  // form create
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
 
-  // edit inline
   const [editingId, setEditingId] = useState(null);
   const [editDraft, setEditDraft] = useState({ title: "", url: "", description: "" });
 
@@ -35,8 +33,9 @@ export default function AdminLinks() {
       if (error) throw error;
       setLinks(Array.isArray(data) ? data : []);
 
-      // se stavi modificando e il record non esiste più, esci
-      setEditingId((prev) => (prev && !(data || []).some((r) => r.id === prev) ? null : prev));
+      setEditingId((prev) =>
+        prev && !(data || []).some((r) => r.id === prev) ? null : prev
+      );
     } catch (e) {
       setErr(e?.message || "Errore caricamento link");
     } finally {
@@ -136,7 +135,11 @@ export default function AdminLinks() {
     setErr("");
     setLoading(true);
     try {
-      const { error } = await supabaseAdmin.from("useful_links").delete().eq("id", row.id);
+      const { error } = await supabaseAdmin
+        .from("useful_links")
+        .delete()
+        .eq("id", row.id);
+
       if (error) throw error;
 
       if (editingId === row.id) cancelEdit();
@@ -148,7 +151,6 @@ export default function AdminLinks() {
     }
   };
 
-  // ---- UI
   const cardStyle = {
     background: "rgba(255,255,255,0.85)",
     borderRadius: 28,
@@ -164,6 +166,7 @@ export default function AdminLinks() {
     fontWeight: 800,
     outline: "none",
     width: "100%",
+    background: "#fff",
   };
 
   const btn = (variant = "dark") => {
@@ -174,16 +177,88 @@ export default function AdminLinks() {
       border: "1px solid rgba(15,23,42,0.12)",
       cursor: "pointer",
       opacity: loading ? 0.7 : 1,
+      whiteSpace: "nowrap",
     };
-    if (variant === "dark") return { ...base, border: "1px solid #0b1224", background: "#0b1224", color: "#fff" };
-    if (variant === "ghost") return { ...base, background: "#fff", color: "#0b1224" };
-    if (variant === "danger") return { ...base, border: "1px solid #fecaca", background: "#fee2e2", color: "#991b1b" };
-    if (variant === "soft") return { ...base, background: "#eef2ff", color: "#111827", border: "1px solid rgba(99,102,241,.25)" };
+    if (variant === "dark") {
+      return { ...base, border: "1px solid #0b1224", background: "#0b1224", color: "#fff" };
+    }
+    if (variant === "ghost") {
+      return { ...base, background: "#fff", color: "#0b1224" };
+    }
+    if (variant === "danger") {
+      return { ...base, border: "1px solid #fecaca", background: "#fee2e2", color: "#991b1b" };
+    }
+    if (variant === "soft") {
+      return { ...base, background: "#eef2ff", color: "#111827", border: "1px solid rgba(99,102,241,.25)" };
+    }
     return base;
   };
 
   return (
-    <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
+    <div className="adminLinksRoot" style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
+      <style>{`
+        .adminLinksRoot * {
+          box-sizing: border-box;
+        }
+
+        .adminLinksFormActions {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .adminLinksRow {
+          background: #fff;
+          border: 1px solid rgba(15,23,42,0.12);
+          border-radius: 20px;
+          padding: 14px;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 320px;
+          gap: 12px;
+          align-items: start;
+          overflow: hidden;
+        }
+
+        .adminLinksLeft {
+          min-width: 0;
+        }
+
+        .adminLinksRight {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        @media (max-width: 900px) {
+          .adminLinksRow {
+            grid-template-columns: 1fr !important;
+          }
+
+          .adminLinksRight {
+            justify-content: flex-start !important;
+          }
+        }
+
+        @media (max-width: 720px) {
+          .adminLinksRoot {
+            padding: 16px !important;
+            border-radius: 22px !important;
+          }
+
+          .adminLinksFormActions > button,
+          .adminLinksRight > button {
+            width: 100%;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .adminLinksRoot {
+            padding: 12px !important;
+          }
+        }
+      `}</style>
+
       <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
         Link utili (titolo + url + descrizione)
       </div>
@@ -204,8 +279,10 @@ export default function AdminLinks() {
         </div>
       )}
 
-      {/* CREATE */}
-      <form onSubmit={handleCreate} style={{ marginTop: 14, display: "grid", gap: 10, maxWidth: 820 }}>
+      <form
+        onSubmit={handleCreate}
+        style={{ marginTop: 14, display: "grid", gap: 10, maxWidth: 820 }}
+      >
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -231,7 +308,7 @@ export default function AdminLinks() {
           disabled={loading}
         />
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div className="adminLinksFormActions">
           <button type="submit" disabled={loading} style={btn("dark")}>
             {loading ? "Salvo..." : "Aggiungi link"}
           </button>
@@ -242,37 +319,43 @@ export default function AdminLinks() {
         </div>
       </form>
 
-      <div style={{ marginTop: 18, fontWeight: 950, color: "#0b1224" }}>Link pubblicati</div>
+      <div style={{ marginTop: 18, fontWeight: 950, color: "#0b1224" }}>
+        Link pubblicati
+      </div>
 
       {loading && links.length === 0 ? (
-        <div style={{ marginTop: 10, fontWeight: 800, color: "#64748b" }}>Caricamento…</div>
+        <div style={{ marginTop: 10, fontWeight: 800, color: "#64748b" }}>
+          Caricamento…
+        </div>
       ) : links.length === 0 ? (
-        <div style={{ marginTop: 10, fontWeight: 800, color: "#64748b" }}>Nessun link presente.</div>
+        <div style={{ marginTop: 10, fontWeight: 800, color: "#64748b" }}>
+          Nessun link presente.
+        </div>
       ) : (
         <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
           {links.map((l) => {
             const isEditing = editingId === l.id;
 
             return (
-              <div
-                key={l.id}
-                style={{
-                  background: "#fff",
-                  border: "1px solid rgba(15,23,42,0.12)",
-                  borderRadius: 20,
-                  padding: 14,
-                  display: "grid",
-                  gridTemplateColumns: "1fr 320px",
-                  gap: 12,
-                  alignItems: "start",
-                }}
-              >
-                {/* LEFT */}
-                <div>
+              <div key={l.id} className="adminLinksRow">
+                <div className="adminLinksLeft">
                   {!isEditing ? (
                     <>
-                      <div style={{ fontWeight: 950, fontSize: 18 }}>{l.title}</div>
-                      <div style={{ marginTop: 6, fontWeight: 800, color: "#334155" }}>{l.description}</div>
+                      <div style={{ fontWeight: 950, fontSize: 18, wordBreak: "break-word" }}>
+                        {l.title}
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 6,
+                          fontWeight: 800,
+                          color: "#334155",
+                          wordBreak: "break-word",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {l.description}
+                      </div>
 
                       <a
                         href={l.url}
@@ -293,21 +376,27 @@ export default function AdminLinks() {
                     <div style={{ display: "grid", gap: 10 }}>
                       <input
                         value={editDraft.title}
-                        onChange={(e) => setEditDraft((p) => ({ ...p, title: e.target.value }))}
+                        onChange={(e) =>
+                          setEditDraft((p) => ({ ...p, title: e.target.value }))
+                        }
                         placeholder="Titolo"
                         style={inputStyle}
                         disabled={loading}
                       />
                       <input
                         value={editDraft.url}
-                        onChange={(e) => setEditDraft((p) => ({ ...p, url: e.target.value }))}
+                        onChange={(e) =>
+                          setEditDraft((p) => ({ ...p, url: e.target.value }))
+                        }
                         placeholder="URL"
                         style={inputStyle}
                         disabled={loading}
                       />
                       <textarea
                         value={editDraft.description}
-                        onChange={(e) => setEditDraft((p) => ({ ...p, description: e.target.value }))}
+                        onChange={(e) =>
+                          setEditDraft((p) => ({ ...p, description: e.target.value }))
+                        }
                         placeholder="Descrizione"
                         rows={3}
                         style={{ ...inputStyle, resize: "vertical", fontWeight: 750 }}
@@ -317,36 +406,47 @@ export default function AdminLinks() {
                   )}
                 </div>
 
-                {/* RIGHT buttons */}
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" }}>
+                <div className="adminLinksRight">
                   {!isEditing ? (
                     <>
-                      <button type="button" onClick={() => startEdit(l)} style={btn("soft")} disabled={loading}>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(l)}
+                        style={btn("soft")}
+                        disabled={loading}
+                      >
                         Modifica
                       </button>
-                      <button type="button" onClick={() => handleDelete(l)} style={btn("danger")} disabled={loading}>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(l)}
+                        style={btn("danger")}
+                        disabled={loading}
+                      >
                         Elimina
                       </button>
                     </>
                   ) : (
                     <>
-                      <button type="button" onClick={saveEdit} style={btn("dark")} disabled={loading}>
+                      <button
+                        type="button"
+                        onClick={saveEdit}
+                        style={btn("dark")}
+                        disabled={loading}
+                      >
                         Salva
                       </button>
-                      <button type="button" onClick={cancelEdit} style={btn("ghost")} disabled={loading}>
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        style={btn("ghost")}
+                        disabled={loading}
+                      >
                         Annulla
                       </button>
                     </>
                   )}
                 </div>
-
-                <style>{`
-                  @media (max-width: 900px){
-                    div[style*="gridTemplateColumns: 1fr 320px"]{
-                      grid-template-columns: 1fr !important;
-                    }
-                  }
-                `}</style>
               </div>
             );
           })}
