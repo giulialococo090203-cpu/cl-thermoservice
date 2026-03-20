@@ -54,7 +54,7 @@ export default function AdminWorks() {
     setLoading(true);
     try {
       const storagePath = makeFileName(file.name);
-      const isVideo = file.type.startsWith("video/");
+      const isVideoFile = file.type.startsWith("video/");
 
       const { error: upErr } = await supabase.storage
         .from("works")
@@ -66,9 +66,7 @@ export default function AdminWorks() {
 
       if (upErr) throw upErr;
 
-      const { data: pub } = supabase.storage
-        .from("works")
-        .getPublicUrl(storagePath);
+      const { data: pub } = supabase.storage.from("works").getPublicUrl(storagePath);
 
       const media_url = pub?.publicUrl;
       if (!media_url) throw new Error("Impossibile ottenere public URL.");
@@ -78,9 +76,9 @@ export default function AdminWorks() {
           title: title.trim(),
           description: description.trim(),
           media_url,
-          media_type: isVideo ? "video" : "image",
+          media_type: isVideoFile ? "video" : "image",
           storage_path: storagePath,
-          ...(isVideo ? {} : { image_url: media_url }),
+          ...(isVideoFile ? {} : { image_url: media_url }),
         },
       ]);
 
@@ -105,10 +103,7 @@ export default function AdminWorks() {
     setLoading(true);
 
     try {
-      const { error: delErr } = await supabase
-        .from("works")
-        .delete()
-        .eq("id", w.id);
+      const { error: delErr } = await supabase.from("works").delete().eq("id", w.id);
 
       if (delErr) throw delErr;
 
@@ -142,37 +137,8 @@ export default function AdminWorks() {
     fontWeight: 800,
     outline: "none",
     width: "100%",
+    boxSizing: "border-box",
     background: "#fff",
-  };
-
-  const darkBtn = {
-    borderRadius: 16,
-    padding: "12px 16px",
-    fontWeight: 900,
-    border: "1px solid #0b1224",
-    background: "#0b1224",
-    color: "#fff",
-    cursor: "pointer",
-  };
-
-  const ghostBtn = {
-    borderRadius: 16,
-    padding: "12px 16px",
-    fontWeight: 900,
-    border: "1px solid rgba(15,23,42,0.12)",
-    background: "#fff",
-    cursor: "pointer",
-  };
-
-  const dangerBtn = {
-    borderRadius: 16,
-    padding: "10px 14px",
-    fontWeight: 900,
-    border: "1px solid #fecaca",
-    background: "#fee2e2",
-    color: "#991b1b",
-    cursor: "pointer",
-    minHeight: 42,
   };
 
   return (
@@ -182,7 +148,7 @@ export default function AdminWorks() {
           box-sizing: border-box;
         }
 
-        .adminWorksFormActions {
+        .adminWorksActions {
           display: flex;
           gap: 10px;
           flex-wrap: wrap;
@@ -208,49 +174,50 @@ export default function AdminWorks() {
           display: block;
         }
 
-        .adminWorksText {
+        .adminWorksContent {
           min-width: 0;
         }
 
-        .adminWorksActions {
+        .adminWorksDeleteWrap {
           display: flex;
           justify-content: flex-end;
         }
 
-        @media (max-width: 900px) {
-          .adminWorksCard {
-            grid-template-columns: 1fr !important;
-          }
-
-          .adminWorksActions {
-            justify-content: flex-start !important;
-          }
-        }
-
-        @media (max-width: 720px) {
+        @media (max-width: 820px) {
           .adminWorksRoot {
             padding: 16px !important;
             border-radius: 22px !important;
           }
 
-          .adminWorksFormActions > button {
-            width: 100%;
+          .adminWorksCard {
+            grid-template-columns: 1fr !important;
           }
 
           .adminWorksMedia {
             width: 100% !important;
-            height: auto !important;
-            max-height: 220px;
+            height: 220px !important;
           }
 
-          .adminWorksTitle {
-            font-size: 16px !important;
+          .adminWorksDeleteWrap {
+            justify-content: stretch !important;
+          }
+
+          .adminWorksDeleteWrap button {
+            width: 100%;
+          }
+
+          .adminWorksActions > button {
+            width: 100%;
           }
         }
 
         @media (max-width: 480px) {
           .adminWorksRoot {
             padding: 12px !important;
+          }
+
+          .adminWorksMedia {
+            height: 180px !important;
           }
         }
       `}</style>
@@ -275,10 +242,7 @@ export default function AdminWorks() {
         </div>
       )}
 
-      <form
-        onSubmit={handleCreateWork}
-        style={{ marginTop: 14, display: "grid", gap: 10, maxWidth: 720 }}
-      >
+      <form onSubmit={handleCreateWork} style={{ marginTop: 14, display: "grid", gap: 10, maxWidth: 720 }}>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -298,13 +262,23 @@ export default function AdminWorks() {
           type="file"
           accept="image/*,video/*"
           onChange={(e) => setFile(e.target.files?.[0] || null)}
+          style={{ width: "100%" }}
         />
 
-        <div className="adminWorksFormActions">
+        <div className="adminWorksActions">
           <button
             type="submit"
             disabled={loading}
-            style={{ ...darkBtn, opacity: loading ? 0.6 : 1 }}
+            style={{
+              borderRadius: 16,
+              padding: "12px 16px",
+              fontWeight: 900,
+              border: "1px solid #0b1224",
+              background: "#0b1224",
+              color: "#fff",
+              cursor: "pointer",
+              opacity: loading ? 0.6 : 1,
+            }}
           >
             {loading ? "Pubblico..." : "Pubblica lavoro"}
           </button>
@@ -312,7 +286,14 @@ export default function AdminWorks() {
           <button
             type="button"
             onClick={loadWorks}
-            style={ghostBtn}
+            style={{
+              borderRadius: 16,
+              padding: "12px 16px",
+              fontWeight: 900,
+              border: "1px solid rgba(15,23,42,0.12)",
+              background: "#fff",
+              cursor: "pointer",
+            }}
           >
             Aggiorna
           </button>
@@ -332,25 +313,13 @@ export default function AdminWorks() {
           {works.map((w) => (
             <div key={w.id} className="adminWorksCard">
               {isVideo(w) ? (
-                <video
-                  src={getUrl(w)}
-                  className="adminWorksMedia"
-                  muted
-                  controls
-                />
+                <video src={getUrl(w)} className="adminWorksMedia" muted />
               ) : (
-                <img
-                  src={getUrl(w)}
-                  alt={w.title}
-                  className="adminWorksMedia"
-                />
+                <img src={getUrl(w)} alt={w.title} className="adminWorksMedia" />
               )}
 
-              <div className="adminWorksText">
-                <div
-                  className="adminWorksTitle"
-                  style={{ fontWeight: 950, fontSize: 18, wordBreak: "break-word" }}
-                >
+              <div className="adminWorksContent">
+                <div style={{ fontWeight: 950, fontSize: 18, wordBreak: "break-word" }}>
                   {w.title}
                 </div>
                 <div
@@ -366,10 +335,19 @@ export default function AdminWorks() {
                 </div>
               </div>
 
-              <div className="adminWorksActions">
+              <div className="adminWorksDeleteWrap">
                 <button
                   onClick={() => handleDeleteWork(w)}
-                  style={dangerBtn}
+                  style={{
+                    borderRadius: 16,
+                    padding: "10px 14px",
+                    fontWeight: 900,
+                    border: "1px solid #fecaca",
+                    background: "#fee2e2",
+                    color: "#991b1b",
+                    cursor: "pointer",
+                    height: 42,
+                  }}
                 >
                   Elimina
                 </button>
