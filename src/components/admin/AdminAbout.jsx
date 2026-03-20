@@ -3,7 +3,7 @@ import { supabaseAdmin } from "../../supabaseAdminClient";
 
 // === CONFIG ===
 const ABOUT_TABLE = "about_content";
-const COMPANY_ID = "21cb4d5d-9566-4488-802c-a6b28488e486"; // Thermoservice fisso
+const COMPANY_ID = "21cb4d5d-9566-4488-802c-a6b28488e486";
 
 const DEFAULT_ABOUT = {
   kicker: "CHI SIAMO",
@@ -49,13 +49,9 @@ export default function AdminAbout() {
   const [err, setErr] = useState("");
   const [ok, setOk] = useState(false);
 
-  // ✅ payload completo
   const [about, setAbout] = useState(DEFAULT_ABOUT);
-
-  // ✅ spia modifiche non salvate
   const [unsaved, setUnsaved] = useState(false);
 
-  // snapshot ultimo salvataggio
   const lastSavedRef = useRef(JSON.stringify(DEFAULT_ABOUT));
 
   const cardStyle = {
@@ -87,17 +83,36 @@ export default function AdminAbout() {
       cursor: "pointer",
       whiteSpace: "nowrap",
     };
-    if (variant === "dark")
-      return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
-    if (variant === "ghost") return { ...base, background: "#fff", color: "#0b1224" };
-    if (variant === "soft")
-      return { ...base, background: "#eef2ff", color: "#111827", border: "1px solid rgba(99,102,241,.25)" };
-    if (variant === "danger")
-      return { ...base, background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" };
+    if (variant === "dark") {
+      return {
+        ...base,
+        background: "#0b1224",
+        color: "#fff",
+        border: "1px solid #0b1224",
+      };
+    }
+    if (variant === "ghost") {
+      return { ...base, background: "#fff", color: "#0b1224" };
+    }
+    if (variant === "soft") {
+      return {
+        ...base,
+        background: "#eef2ff",
+        color: "#111827",
+        border: "1px solid rgba(99,102,241,.25)",
+      };
+    }
+    if (variant === "danger") {
+      return {
+        ...base,
+        background: "#fee2e2",
+        color: "#991b1b",
+        border: "1px solid #fecaca",
+      };
+    }
     return base;
   };
 
-  // ---------- LOAD
   const loadAbout = async () => {
     setErr("");
     setOk(false);
@@ -114,7 +129,10 @@ export default function AdminAbout() {
       if (error) throw error;
 
       const payload = data?.payload;
-      const merged = payload && typeof payload === "object" ? { ...DEFAULT_ABOUT, ...payload } : DEFAULT_ABOUT;
+      const merged =
+        payload && typeof payload === "object"
+          ? { ...DEFAULT_ABOUT, ...payload }
+          : DEFAULT_ABOUT;
 
       setAbout(merged);
       lastSavedRef.current = JSON.stringify(merged);
@@ -128,10 +146,8 @@ export default function AdminAbout() {
 
   useEffect(() => {
     loadAbout();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ---------- SAVE (manuale)
   const saveAbout = async () => {
     setErr("");
     setOk(false);
@@ -164,7 +180,6 @@ export default function AdminAbout() {
     }
   };
 
-  // ---------- CHANGE (senza autosave)
   const markUnsavedIfNeeded = (next) => {
     const snap = JSON.stringify(next);
     setUnsaved(snap !== lastSavedRef.current);
@@ -178,8 +193,14 @@ export default function AdminAbout() {
     });
   };
 
-  const points = useMemo(() => (Array.isArray(about.points) ? about.points : []), [about.points]);
-  const statCards = useMemo(() => (Array.isArray(about.statCards) ? about.statCards : []), [about.statCards]);
+  const points = useMemo(
+    () => (Array.isArray(about.points) ? about.points : []),
+    [about.points]
+  );
+  const statCards = useMemo(
+    () => (Array.isArray(about.statCards) ? about.statCards : []),
+    [about.statCards]
+  );
 
   const addPoint = () => {
     setAbout((prev) => {
@@ -211,7 +232,10 @@ export default function AdminAbout() {
     setAbout((prev) => {
       const next = {
         ...prev,
-        statCards: [...statCards, { icon: "Timer", value: "Nuova voce", label: "Descrizione voce" }],
+        statCards: [
+          ...statCards,
+          { icon: "Timer", value: "Nuova voce", label: "Descrizione voce" },
+        ],
       };
       markUnsavedIfNeeded(next);
       return next;
@@ -220,7 +244,9 @@ export default function AdminAbout() {
 
   const updateStatCard = (idx, patch) => {
     setAbout((prev) => {
-      const nextCards = statCards.map((c, i) => (i === idx ? { ...c, ...patch } : c));
+      const nextCards = statCards.map((c, i) =>
+        i === idx ? { ...c, ...patch } : c
+      );
       const next = { ...prev, statCards: nextCards };
       markUnsavedIfNeeded(next);
       return next;
@@ -237,17 +263,116 @@ export default function AdminAbout() {
   };
 
   return (
-    <div style={cardStyle}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+    <div className="adminAboutRoot" style={cardStyle}>
+      <style>{`
+        .adminAboutTop {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .adminAboutTopActions {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .adminAboutMainGrid {
+          margin-top: 16px;
+          display: grid;
+          grid-template-columns: 1.1fr .9fr;
+          gap: 16px;
+          align-items: start;
+        }
+
+        .adminAboutPanel {
+          background: rgba(255,255,255,.9);
+          border: 1px solid rgba(15,23,42,0.10);
+          border-radius: 22px;
+          padding: 16px;
+          min-width: 0;
+        }
+
+        .adminAboutPointsRow {
+          display: grid;
+          grid-template-columns: 1fr 120px;
+          gap: 10px;
+          align-items: center;
+          background: #fff;
+          border: 1px solid rgba(15,23,42,0.10);
+          border-radius: 18px;
+          padding: 10px;
+        }
+
+        .adminAboutStatsTopRow {
+          display: grid;
+          grid-template-columns: 140px 1fr;
+          gap: 10px;
+        }
+
+        .adminAboutStatCardTop {
+          display: grid;
+          grid-template-columns: 1fr 140px;
+          gap: 10px;
+        }
+
+        @media (max-width: 980px) {
+          .adminAboutMainGrid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
+        @media (max-width: 720px) {
+          .adminAboutRoot {
+            padding: 16px !important;
+            border-radius: 22px !important;
+          }
+
+          .adminAboutTop {
+            align-items: flex-start !important;
+          }
+
+          .adminAboutTopActions {
+            width: 100%;
+            align-items: stretch !important;
+          }
+
+          .adminAboutTopActions > * {
+            width: 100%;
+          }
+
+          .adminAboutPointsRow,
+          .adminAboutStatsTopRow,
+          .adminAboutStatCardTop {
+            grid-template-columns: 1fr !important;
+          }
+
+          .adminAboutPanel {
+            padding: 14px !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .adminAboutRoot {
+            padding: 12px !important;
+          }
+        }
+      `}</style>
+
+      <div className="adminAboutTop">
         <div>
-          <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>Sezione “Chi siamo” (About)</div>
+          <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
+            Sezione “Chi siamo” (About)
+          </div>
           <div style={{ marginTop: 6, color: "#475569", fontWeight: 800 }}>
             Modifichi qui → poi premi <b>Salva</b> per pubblicare.
           </div>
         </div>
 
-        {/* spia + bottoni */}
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <div className="adminAboutTopActions">
           <div
             style={{
               padding: "10px 14px",
@@ -261,11 +386,21 @@ export default function AdminAbout() {
             {unsaved ? "● Modifiche non salvate" : "✓ Tutto salvato"}
           </div>
 
-          <button style={btn("dark")} type="button" onClick={saveAbout} disabled={saving || !unsaved}>
+          <button
+            style={btn("dark")}
+            type="button"
+            onClick={saveAbout}
+            disabled={saving || !unsaved}
+          >
             {saving ? "Salvataggio…" : "Salva"}
           </button>
 
-          <button style={btn("ghost")} type="button" onClick={loadAbout} disabled={saving}>
+          <button
+            style={btn("ghost")}
+            type="button"
+            onClick={loadAbout}
+            disabled={saving}
+          >
             Ricarica dal DB
           </button>
         </div>
@@ -304,210 +439,233 @@ export default function AdminAbout() {
       )}
 
       {loading ? (
-        <div style={{ marginTop: 14, fontWeight: 900, color: "#0b1224" }}>Caricamento…</div>
+        <div style={{ marginTop: 14, fontWeight: 900, color: "#0b1224" }}>
+          Caricamento…
+        </div>
       ) : (
-        <>
-          <div
-            style={{
-              marginTop: 16,
-              display: "grid",
-              gridTemplateColumns: "1.1fr .9fr",
-              gap: 16,
-              alignItems: "start",
-            }}
-          >
-            {/* SINISTRA */}
-            <div
-              style={{
-                background: "rgba(255,255,255,.9)",
-                border: "1px solid rgba(15,23,42,0.10)",
-                borderRadius: 22,
-                padding: 16,
-              }}
-            >
-              <div style={{ fontWeight: 950, color: "#0b1224" }}>Testi principali</div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                <input
-                  style={inputStyle}
-                  value={about.kicker || ""}
-                  onChange={(e) => setField("kicker", e.target.value)}
-                  placeholder="Kicker (es. CHI SIAMO)"
-                />
-                <input
-                  style={inputStyle}
-                  value={about.title || ""}
-                  onChange={(e) => setField("title", e.target.value)}
-                  placeholder="Titolo"
-                />
-                <textarea
-                  style={{ ...inputStyle, minHeight: 90, resize: "vertical", fontWeight: 750 }}
-                  value={about.lead || ""}
-                  onChange={(e) => setField("lead", e.target.value)}
-                  placeholder="Testo introduttivo"
-                />
-              </div>
-
-              <div style={{ marginTop: 18, fontWeight: 950, color: "#0b1224" }}>Colonna sinistra</div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                <input
-                  style={inputStyle}
-                  value={about.leftTitle || ""}
-                  onChange={(e) => setField("leftTitle", e.target.value)}
-                  placeholder="Titolo box sinistro"
-                />
-                <textarea
-                  style={{ ...inputStyle, minHeight: 90, resize: "vertical", fontWeight: 750 }}
-                  value={about.leftBody || ""}
-                  onChange={(e) => setField("leftBody", e.target.value)}
-                  placeholder="Testo box sinistro"
-                />
-              </div>
-
-              <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                <div style={{ fontWeight: 950, color: "#0b1224" }}>Riquadri (punti)</div>
-                <button style={btn("soft")} type="button" onClick={addPoint} disabled={saving}>
-                  + Aggiungi riquadro
-                </button>
-              </div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                {points.map((p, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 120px",
-                      gap: 10,
-                      alignItems: "center",
-                      background: "#fff",
-                      border: "1px solid rgba(15,23,42,0.10)",
-                      borderRadius: 18,
-                      padding: 10,
-                    }}
-                  >
-                    <input
-                      style={inputStyle}
-                      value={p}
-                      onChange={(e) => updatePoint(idx, e.target.value)}
-                      placeholder="Testo riquadro"
-                    />
-                    <button style={btn("danger")} type="button" onClick={() => removePoint(idx)} disabled={saving}>
-                      Elimina
-                    </button>
-                  </div>
-                ))}
-              </div>
+        <div className="adminAboutMainGrid">
+          <div className="adminAboutPanel">
+            <div style={{ fontWeight: 950, color: "#0b1224" }}>
+              Testi principali
             </div>
 
-            {/* DESTRA */}
+            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+              <input
+                style={inputStyle}
+                value={about.kicker || ""}
+                onChange={(e) => setField("kicker", e.target.value)}
+                placeholder="Kicker (es. CHI SIAMO)"
+              />
+              <input
+                style={inputStyle}
+                value={about.title || ""}
+                onChange={(e) => setField("title", e.target.value)}
+                placeholder="Titolo"
+              />
+              <textarea
+                style={{
+                  ...inputStyle,
+                  minHeight: 90,
+                  resize: "vertical",
+                  fontWeight: 750,
+                }}
+                value={about.lead || ""}
+                onChange={(e) => setField("lead", e.target.value)}
+                placeholder="Testo introduttivo"
+              />
+            </div>
+
+            <div style={{ marginTop: 18, fontWeight: 950, color: "#0b1224" }}>
+              Colonna sinistra
+            </div>
+
+            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+              <input
+                style={inputStyle}
+                value={about.leftTitle || ""}
+                onChange={(e) => setField("leftTitle", e.target.value)}
+                placeholder="Titolo box sinistro"
+              />
+              <textarea
+                style={{
+                  ...inputStyle,
+                  minHeight: 90,
+                  resize: "vertical",
+                  fontWeight: 750,
+                }}
+                value={about.leftBody || ""}
+                onChange={(e) => setField("leftBody", e.target.value)}
+                placeholder="Testo box sinistro"
+              />
+            </div>
+
             <div
               style={{
-                background: "rgba(255,255,255,.9)",
-                border: "1px solid rgba(15,23,42,0.10)",
-                borderRadius: 22,
-                padding: 16,
+                marginTop: 16,
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 10,
+                flexWrap: "wrap",
               }}
             >
-              <div style={{ fontWeight: 950, color: "#0b1224" }}>Box destro (Dati operativi)</div>
+              <div style={{ fontWeight: 950, color: "#0b1224" }}>
+                Riquadri (punti)
+              </div>
+              <button
+                style={btn("soft")}
+                type="button"
+                onClick={addPoint}
+                disabled={saving}
+              >
+                + Aggiungi riquadro
+              </button>
+            </div>
 
-              <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                <input
-                  style={inputStyle}
-                  value={about.statsKicker || ""}
-                  onChange={(e) => setField("statsKicker", e.target.value)}
-                  placeholder="Titolo box (es. Dati operativi)"
-                />
-
-                <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", gap: 10 }}>
+            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+              {points.map((p, idx) => (
+                <div key={idx} className="adminAboutPointsRow">
                   <input
                     style={inputStyle}
-                    value={about.statsValue || ""}
-                    onChange={(e) => setField("statsValue", e.target.value)}
-                    placeholder="Valore (es. 10+)"
+                    value={p}
+                    onChange={(e) => updatePoint(idx, e.target.value)}
+                    placeholder="Testo riquadro"
                   />
-                  <input
-                    style={inputStyle}
-                    value={about.statsLabel || ""}
-                    onChange={(e) => setField("statsLabel", e.target.value)}
-                    placeholder="Etichetta (es. Anni di esperienza...)"
-                  />
-                </div>
-
-                <textarea
-                  style={{ ...inputStyle, minHeight: 90, resize: "vertical", fontWeight: 750 }}
-                  value={about.statsFooter || ""}
-                  onChange={(e) => setField("statsFooter", e.target.value)}
-                  placeholder="Testo finale box"
-                />
-              </div>
-
-              <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                <div style={{ fontWeight: 950, color: "#0b1224" }}>Voci box destro</div>
-                <button style={btn("soft")} type="button" onClick={addStatCard} disabled={saving}>
-                  + Aggiungi voce
-                </button>
-              </div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 12 }}>
-                {statCards.map((c, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      background: "#fff",
-                      border: "1px solid rgba(15,23,42,0.10)",
-                      borderRadius: 18,
-                      padding: 10,
-                      display: "grid",
-                      gap: 10,
-                    }}
+                  <button
+                    style={btn("danger")}
+                    type="button"
+                    onClick={() => removePoint(idx)}
+                    disabled={saving}
                   >
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 140px", gap: 10 }}>
-                      <input
-                        style={inputStyle}
-                        value={c?.value || ""}
-                        onChange={(e) => updateStatCard(idx, { value: e.target.value })}
-                        placeholder="Titolo voce (es. Interventi rapidi)"
-                      />
-
-                      <button style={btn("danger")} type="button" onClick={() => removeStatCard(idx)} disabled={saving}>
-                        Elimina
-                      </button>
-                    </div>
-
-                    <input
-                      style={inputStyle}
-                      value={c?.label || ""}
-                      onChange={(e) => updateStatCard(idx, { label: e.target.value })}
-                      placeholder="Descrizione voce"
-                    />
-
-                    <select
-                      style={inputStyle}
-                      value={c?.icon || "Timer"}
-                      onChange={(e) => updateStatCard(idx, { icon: e.target.value })}
-                    >
-                      {ICON_OPTIONS.map((o) => (
-                        <option key={o.key} value={o.key}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
+                    Elimina
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
 
-          <style>{`
-            @media (max-width: 980px){
-              div[style*="grid-template-columns: 1.1fr .9fr"]{
-                grid-template-columns: 1fr !important;
-              }
-            }
-          `}</style>
-        </>
+          <div className="adminAboutPanel">
+            <div style={{ fontWeight: 950, color: "#0b1224" }}>
+              Box destro (Dati operativi)
+            </div>
+
+            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+              <input
+                style={inputStyle}
+                value={about.statsKicker || ""}
+                onChange={(e) => setField("statsKicker", e.target.value)}
+                placeholder="Titolo box (es. Dati operativi)"
+              />
+
+              <div className="adminAboutStatsTopRow">
+                <input
+                  style={inputStyle}
+                  value={about.statsValue || ""}
+                  onChange={(e) => setField("statsValue", e.target.value)}
+                  placeholder="Valore (es. 10+)"
+                />
+                <input
+                  style={inputStyle}
+                  value={about.statsLabel || ""}
+                  onChange={(e) => setField("statsLabel", e.target.value)}
+                  placeholder="Etichetta (es. Anni di esperienza...)"
+                />
+              </div>
+
+              <textarea
+                style={{
+                  ...inputStyle,
+                  minHeight: 90,
+                  resize: "vertical",
+                  fontWeight: 750,
+                }}
+                value={about.statsFooter || ""}
+                onChange={(e) => setField("statsFooter", e.target.value)}
+                placeholder="Testo finale box"
+              />
+            </div>
+
+            <div
+              style={{
+                marginTop: 16,
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <div style={{ fontWeight: 950, color: "#0b1224" }}>
+                Voci box destro
+              </div>
+              <button
+                style={btn("soft")}
+                type="button"
+                onClick={addStatCard}
+                disabled={saving}
+              >
+                + Aggiungi voce
+              </button>
+            </div>
+
+            <div style={{ marginTop: 10, display: "grid", gap: 12 }}>
+              {statCards.map((c, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: "#fff",
+                    border: "1px solid rgba(15,23,42,0.10)",
+                    borderRadius: 18,
+                    padding: 10,
+                    display: "grid",
+                    gap: 10,
+                  }}
+                >
+                  <div className="adminAboutStatCardTop">
+                    <input
+                      style={inputStyle}
+                      value={c?.value || ""}
+                      onChange={(e) =>
+                        updateStatCard(idx, { value: e.target.value })
+                      }
+                      placeholder="Titolo voce (es. Interventi rapidi)"
+                    />
+
+                    <button
+                      style={btn("danger")}
+                      type="button"
+                      onClick={() => removeStatCard(idx)}
+                      disabled={saving}
+                    >
+                      Elimina
+                    </button>
+                  </div>
+
+                  <input
+                    style={inputStyle}
+                    value={c?.label || ""}
+                    onChange={(e) =>
+                      updateStatCard(idx, { label: e.target.value })
+                    }
+                    placeholder="Descrizione voce"
+                  />
+
+                  <select
+                    style={inputStyle}
+                    value={c?.icon || "Timer"}
+                    onChange={(e) =>
+                      updateStatCard(idx, { icon: e.target.value })
+                    }
+                  >
+                    {ICON_OPTIONS.map((o) => (
+                      <option key={o.key} value={o.key}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
