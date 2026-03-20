@@ -31,41 +31,33 @@ import {
 import RequestsManager from "./RequestsManager";
 
 export default function DatorePanel() {
-  // AUTH
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
 
-  // ROLE + COMPANY
   const [roleLoading, setRoleLoading] = useState(false);
   const [roleError, setRoleError] = useState("");
   const [role, setRole] = useState(null);
   const [companyId, setCompanyId] = useState(null);
   const [company, setCompany] = useState(null);
 
-  // LOGIN FORM
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // DATA: richieste
   const [requests, setRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState("");
 
-  // realtime notice
   const [liveNotice, setLiveNotice] = useState("");
   const firstRealtimeLoadRef = useRef(true);
 
-  // DATA: pdf salvati
   const [files, setFiles] = useState([]);
   const [filesLoading, setFilesLoading] = useState(false);
   const [filesError, setFilesError] = useState("");
 
-  // MULTI-SELEZIONE PDF nello storico
   const [selectedPaths, setSelectedPaths] = useState([]);
   const [lastCreatedStoragePath, setLastCreatedStoragePath] = useState(null);
 
-  // CREA PREVENTIVO
   const [activeRequest, setActiveRequest] = useState(null);
   const [manualQuote, setManualQuote] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -80,9 +72,7 @@ export default function DatorePanel() {
   const [selectedClauses, setSelectedClauses] = useState([]);
   const [manualTotal, setManualTotal] = useState("");
 
-  const [items, setItems] = useState([
-    { title: "Intervento", description: "", qty: 1, unit_price: 0 },
-  ]);
+  const [items, setItems] = useState([{ title: "Intervento", description: "", qty: 1, unit_price: 0 }]);
 
   const userEmail = session?.user?.email || "";
   const isEmployer = role === "employer";
@@ -127,7 +117,6 @@ export default function DatorePanel() {
     return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
   };
 
-  // SESSION INIT
   useEffect(() => {
     let sub;
 
@@ -149,7 +138,6 @@ export default function DatorePanel() {
     };
   }, []);
 
-  // LOAD ROLE + COMPANY
   useEffect(() => {
     let alive = true;
 
@@ -194,7 +182,6 @@ export default function DatorePanel() {
     };
   }, [session?.user?.id]);
 
-  // LOAD DATA
   const loadRequests = async () => {
     if (!companyId) return;
     setRequestsError("");
@@ -237,7 +224,6 @@ export default function DatorePanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id, roleLoading, roleError, role, companyId]);
 
-  // REALTIME richieste
   useEffect(() => {
     if (!session?.user?.id) return;
     if (roleLoading || roleError) return;
@@ -289,7 +275,6 @@ export default function DatorePanel() {
     };
   }, [session?.user?.id, roleLoading, roleError, isEmployer, companyId]);
 
-  // LOGIN/LOGOUT
   const handleLogin = async (e) => {
     e.preventDefault();
     setAuthError("");
@@ -338,11 +323,9 @@ export default function DatorePanel() {
     setNotesInternal("");
     setSelectedClauses([]);
     setManualTotal("");
-
     setItems([{ title: "Intervento", description: "", qty: 1, unit_price: 0 }]);
   };
 
-  // PREVENTIVO: seleziona richiesta
   const pickRequest = (q) => {
     setManualQuote(false);
     setActiveRequest(q);
@@ -364,7 +347,6 @@ export default function DatorePanel() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // PREVENTIVO MANUALE
   const startManualQuote = () => {
     setActiveRequest(null);
     setManualQuote(true);
@@ -385,16 +367,12 @@ export default function DatorePanel() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // items helpers
   const updateItem = (idx, patch) => {
     setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   };
 
   const addItem = () => {
-    setItems((prev) => [
-      ...prev,
-      { title: "Voce", description: "", qty: 1, unit_price: 0 },
-    ]);
+    setItems((prev) => [...prev, { title: "Voce", description: "", qty: 1, unit_price: 0 }]);
   };
 
   const removeItem = (idx) => {
@@ -402,9 +380,7 @@ export default function DatorePanel() {
   };
 
   const toggleClause = (key) => {
-    setSelectedClauses((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-    );
+    setSelectedClauses((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   };
 
   const cleanedForTotals = useMemo(() => {
@@ -429,7 +405,6 @@ export default function DatorePanel() {
     return totals;
   }, [manualTotal, totals]);
 
-  // Scarica PDF richieste
   const handleDownloadRequestsPdf = () => {
     const blob = buildRequestsPdfBlob(requests, `${company?.name || "Azienda"} — Richieste preventivo`);
     const url = URL.createObjectURL(blob);
@@ -442,32 +417,33 @@ export default function DatorePanel() {
     URL.revokeObjectURL(url);
   };
 
-  // Apri PDF salvato
-  const openSavedPdf = async (storagePath) => {
-    const newTab = window.open("", "_blank");
+  const openSavedPdf = async (storagePath, openedTab) => {
+    const targetTab = openedTab || window.open("about:blank", "_blank");
 
-    if (!newTab) {
+    if (!targetTab) {
       throw new Error("Il browser ha bloccato l'apertura della nuova scheda.");
     }
 
     try {
-      newTab.document.write("<p style='font-family:Arial,sans-serif;padding:16px'>Apertura PDF...</p>");
+      targetTab.document.body.innerHTML =
+        "<p style='font-family:Arial,sans-serif;padding:16px'>Apertura PDF...</p>";
 
       const signedUrl = await createSignedUrl(storagePath, 300);
 
       if (!signedUrl) {
-        newTab.close();
+        targetTab.close();
         throw new Error("Signed URL non disponibile (controlla createSignedUrl in datoreApi).");
       }
 
-      newTab.location.href = signedUrl;
+      targetTab.location.replace(signedUrl);
     } catch (err) {
-      newTab.close();
+      try {
+        targetTab.close();
+      } catch {}
       throw err;
     }
   };
 
-  // Download PDF salvato
   const downloadSavedPdf = async (storagePath) => {
     const signedUrl = await createSignedUrl(storagePath, 300);
 
@@ -505,7 +481,6 @@ export default function DatorePanel() {
     }
   };
 
-  // ELIMINA PDF SELEZIONATI
   const deleteSelectedPdfs = async () => {
     if (!selectedPaths.length) return;
 
@@ -535,7 +510,6 @@ export default function DatorePanel() {
     }
   };
 
-  // selezione multi
   const togglePath = (p) => {
     setSelectedPaths((prev) => {
       if (prev.includes(p)) return prev.filter((x) => x !== p);
@@ -551,7 +525,6 @@ export default function DatorePanel() {
     setSelectedPaths([]);
   };
 
-  // CREA PREVENTIVO + PDF + SALVATAGGIO
   const createQuoteAndSavePdf = async () => {
     setCreateError("");
     setCreateOk("");
@@ -672,20 +645,15 @@ export default function DatorePanel() {
       }}
     >
       <div style={{ maxWidth: 1180, margin: "0 auto" }}>
-        {/* HEADER */}
         <div style={{ ...cardStyle, padding: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
             <div>
-              <div style={{ fontSize: 54, fontWeight: 950, color: "#0b1224", lineHeight: 1 }}>
-                Area Datore
-              </div>
+              <div style={{ fontSize: 54, fontWeight: 950, color: "#0b1224", lineHeight: 1 }}>Area Datore</div>
               <div style={{ marginTop: 10, color: "#475569", fontWeight: 800 }}>
                 Accesso riservato (role richiesto: <b>employer</b>)
               </div>
               {company?.name ? (
-                <div style={{ marginTop: 10, color: "#0b1224", fontWeight: 900 }}>
-                  Azienda: {company.name}
-                </div>
+                <div style={{ marginTop: 10, color: "#0b1224", fontWeight: 900 }}>Azienda: {company.name}</div>
               ) : null}
             </div>
 
@@ -716,7 +684,6 @@ export default function DatorePanel() {
           </div>
         </div>
 
-        {/* AUTH */}
         <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
           {authLoading ? (
             <div style={{ fontWeight: 900, color: "#0b1224" }}>Caricamento…</div>
@@ -724,13 +691,7 @@ export default function DatorePanel() {
             <form onSubmit={handleLogin} style={{ display: "grid", gap: 14, maxWidth: 620 }}>
               {authError && <div style={dangerBox}>Errore login: {authError}</div>}
 
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email datore"
-                autoComplete="email"
-                style={inputStyle}
-              />
+              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email datore" autoComplete="email" style={inputStyle} />
               <input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -768,7 +729,6 @@ export default function DatorePanel() {
           )}
         </div>
 
-        {/* CONTENUTO DATORE */}
         {session && isEmployer && !roleLoading && !roleError && (
           <>
             {liveNotice ? (
@@ -798,7 +758,6 @@ export default function DatorePanel() {
               onDownloadPdf={handleDownloadRequestsPdf}
             />
 
-            {/* CREA PREVENTIVO */}
             <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
               <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
                 Generazione preventivo (PDF + salvataggio)
@@ -809,33 +768,16 @@ export default function DatorePanel() {
               </div>
 
               {!showQuoteForm ? (
-                <div style={hintBox}>
-                  Seleziona una richiesta e clicca “Usa richiesta” oppure premi “Nuovo preventivo”.
-                </div>
+                <div style={hintBox}>Seleziona una richiesta e clicca “Usa richiesta” oppure premi “Nuovo preventivo”.</div>
               ) : (
                 <>
                   {createError && <div style={dangerBox}>{createError}</div>}
                   {createOk && <div style={okBox}>{createOk}</div>}
 
                   <div style={{ marginTop: 14, display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
-                    <input
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder="Nome cliente"
-                      style={inputStyle}
-                    />
-                    <input
-                      value={customerEmail}
-                      onChange={(e) => setCustomerEmail(e.target.value)}
-                      placeholder="Email cliente"
-                      style={inputStyle}
-                    />
-                    <input
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                      placeholder="Telefono cliente"
-                      style={inputStyle}
-                    />
+                    <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nome cliente" style={inputStyle} />
+                    <input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} placeholder="Email cliente" style={inputStyle} />
+                    <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Telefono cliente" style={inputStyle} />
                     <input
                       value={customerAddress}
                       onChange={(e) => setCustomerAddress(e.target.value)}
@@ -869,24 +811,14 @@ export default function DatorePanel() {
                           alignItems: "start",
                         }}
                       >
-                        <input
-                          value={it.title ?? ""}
-                          onChange={(e) => updateItem(idx, { title: e.target.value })}
-                          placeholder="Titolo"
-                          style={miniInput}
-                        />
+                        <input value={it.title ?? ""} onChange={(e) => updateItem(idx, { title: e.target.value })} placeholder="Titolo" style={miniInput} />
                         <input
                           value={it.description ?? ""}
                           onChange={(e) => updateItem(idx, { description: e.target.value })}
                           placeholder="Descrizione"
                           style={miniInput}
                         />
-                        <input
-                          value={String(it.qty ?? "")}
-                          onChange={(e) => updateItem(idx, { qty: e.target.value })}
-                          placeholder="Qta"
-                          style={miniInput}
-                        />
+                        <input value={String(it.qty ?? "")} onChange={(e) => updateItem(idx, { qty: e.target.value })} placeholder="Qta" style={miniInput} />
                         <input
                           value={String(it.unit_price ?? "")}
                           onChange={(e) => updateItem(idx, { unit_price: e.target.value })}
@@ -894,29 +826,16 @@ export default function DatorePanel() {
                           style={miniInput}
                         />
 
-                        <button
-                          style={{ ...btn("danger"), height: 44 }}
-                          onClick={() => removeItem(idx)}
-                          type="button"
-                          disabled={items.length === 1}
-                        >
+                        <button style={{ ...btn("danger"), height: 44 }} onClick={() => removeItem(idx)} type="button" disabled={items.length === 1}>
                           Rimuovi
                         </button>
                       </div>
                     ))}
                   </div>
 
-                  <div style={{ marginTop: 16, fontWeight: 950, color: "#0b1224" }}>
-                    Clausole aggiuntive
-                  </div>
+                  <div style={{ marginTop: 16, fontWeight: 950, color: "#0b1224" }}>Clausole aggiuntive</div>
 
-                  <div
-                    style={{
-                      marginTop: 10,
-                      display: "grid",
-                      gap: 10,
-                    }}
-                  >
+                  <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                     {QUOTE_OPTIONAL_CLAUSES.map((clause) => {
                       const checked = selectedClauses.includes(clause.key);
 
@@ -934,12 +853,7 @@ export default function DatorePanel() {
                             cursor: "pointer",
                           }}
                         >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => toggleClause(clause.key)}
-                            style={{ marginTop: 3 }}
-                          />
+                          <input type="checkbox" checked={checked} onChange={() => toggleClause(clause.key)} style={{ marginTop: 3 }} />
                           <span
                             style={{
                               fontWeight: 800,
@@ -1034,7 +948,6 @@ export default function DatorePanel() {
               )}
             </div>
 
-            {/* ARCHIVIO PREVENTIVI */}
             <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
               <QuoteArchiveManager
                 companyId={companyId}
@@ -1047,7 +960,6 @@ export default function DatorePanel() {
               />
             </div>
 
-            {/* STORICO PDF */}
             <div ref={filesSectionRef} style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <div>
@@ -1137,13 +1049,14 @@ export default function DatorePanel() {
                       <div
                         key={f.id}
                         onClick={() => togglePath(f.storage_path)}
-                        onDoubleClick={async () => {
-                          try {
-                            await openSavedPdf(f.storage_path);
-                          } catch (err) {
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          const newTab = window.open("about:blank", "_blank");
+
+                          openSavedPdf(f.storage_path, newTab).catch((err) => {
                             console.error(err);
                             alert(err?.message || "Errore apertura PDF.");
-                          }
+                          });
                         }}
                         style={{
                           display: "grid",
@@ -1191,14 +1104,14 @@ export default function DatorePanel() {
                           <button
                             type="button"
                             style={{ ...btn("ghost"), padding: "10px 14px" }}
-                            onClick={async (e) => {
+                            onClick={(e) => {
                               e.stopPropagation();
-                              try {
-                                await openSavedPdf(f.storage_path);
-                              } catch (err) {
+                              const newTab = window.open("about:blank", "_blank");
+
+                              openSavedPdf(f.storage_path, newTab).catch((err) => {
                                 console.error(err);
                                 alert(err?.message || "Errore apertura PDF.");
-                              }
+                              });
                             }}
                           >
                             Apri
