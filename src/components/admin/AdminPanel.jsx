@@ -427,17 +427,31 @@ export default function AdminPanel() {
 
         {session && isAdmin && (
           <>
-            {showQuotes && <AdminQuotes />}
+            <div
+              style={{
+                marginTop: 16,
+                padding: 16,
+                borderRadius: 16,
+                background: "#dcfce7",
+                border: "1px solid #bbf7d0",
+                color: "#065f46",
+                fontWeight: 900,
+              }}
+            >
+              AdminPanel caricato correttamente
+            </div>
 
-            <AdminServices />
-            <AdminAbout />
-            <AdminCoverage />
-            <AdminCertifications />
-            <AdminFaq />
-            <AdminReviews />
-            <AdminWorks />
-            <AdminLinks />
-            <AdminBrands />
+            {/* riattiva un componente alla volta */}
+            {/* {showQuotes && <AdminQuotes />} */}
+            {/* <AdminServices /> */}
+            {/* <AdminAbout /> */}
+            {/* <AdminCoverage /> */}
+            {/* <AdminCertifications /> */}
+            {/* <AdminFaq /> */}
+            {/* <AdminReviews /> */}
+            {/* <AdminWorks /> */}
+            {/* <AdminLinks /> */}
+            {/* <AdminBrands /> */}
           </>
         )}
       </div>
