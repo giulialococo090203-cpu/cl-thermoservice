@@ -200,6 +200,7 @@ export default function AdminPanel() {
   return (
     <div
       ref={containerRef}
+      className="adminPanelRoot"
       style={{
         minHeight: "100vh",
         padding: "28px 18px",
@@ -207,10 +208,70 @@ export default function AdminPanel() {
           "radial-gradient(1200px 600px at 15% 5%, rgba(59,130,246,0.10), transparent 55%), radial-gradient(1200px 600px at 85% 0%, rgba(244,63,94,0.10), transparent 55%), #f6f8fb",
       }}
     >
+      <style>{`
+        @media (max-width: 980px){
+          .adminHeaderTop{
+            align-items: flex-start !important;
+          }
+
+          .adminHeaderActions{
+            width: 100%;
+            justify-content: flex-start !important;
+            flex-wrap: wrap;
+          }
+
+          .adminLoginForm{
+            max-width: 100% !important;
+          }
+
+          .adminQuotesBox{
+            align-items: flex-start !important;
+          }
+        }
+
+        @media (max-width: 640px){
+          .adminPanelRoot{
+            padding: 16px 10px !important;
+          }
+
+          .adminCard{
+            padding: 16px !important;
+            border-radius: 22px !important;
+          }
+
+          .adminTitle{
+            font-size: 30px !important;
+          }
+
+          .adminBadge{
+            max-width: 100% !important;
+          }
+
+          .adminQuotesBox{
+            flex-direction: column !important;
+            align-items: stretch !important;
+          }
+
+          .adminQuotesBox button{
+            width: 100%;
+          }
+
+          .adminLoginForm button{
+            width: 100%;
+          }
+        }
+
+        @media (max-width: 420px){
+          .adminTitle{
+            font-size: 26px !important;
+          }
+        }
+      `}</style>
+
       <div style={{ maxWidth: 1150, margin: "0 auto" }}>
-        {/* HEADER */}
-        <div style={{ ...cardStyle, padding: 24 }}>
+        <div className="adminCard" style={{ ...cardStyle, padding: 24 }}>
           <div
+            className="adminHeaderTop"
             style={{
               display: "flex",
               justifyContent: "space-between",
@@ -220,6 +281,7 @@ export default function AdminPanel() {
           >
             <div>
               <div
+                className="adminTitle"
                 style={{
                   fontSize: 44,
                   fontWeight: 950,
@@ -242,8 +304,9 @@ export default function AdminPanel() {
             </div>
 
             {session && (
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div className="adminHeaderActions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span
+                  className="adminBadge"
                   style={{
                     padding: "8px 12px",
                     borderRadius: 999,
@@ -269,8 +332,7 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        {/* LOGIN */}
-        <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
+        <div className="adminCard" style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
           {authLoading ? (
             <div style={{ fontWeight: 900, color: "#0b1224" }}>
               Caricamento…
@@ -278,6 +340,7 @@ export default function AdminPanel() {
           ) : !session ? (
             <form
               onSubmit={handleLogin}
+              className="adminLoginForm"
               style={{ display: "grid", gap: 14, maxWidth: 620 }}
             >
               {authError && <div style={dangerBox}>{authError}</div>}
@@ -323,10 +386,10 @@ export default function AdminPanel() {
           )}
         </div>
 
-        {/* BOTTONE RICHIESTE */}
         {session && isAdmin && (
-          <div style={{ marginTop: 16, ...cardStyle, padding: 20 }}>
+          <div className="adminCard" style={{ marginTop: 16, ...cardStyle, padding: 20 }}>
             <div
+              className="adminQuotesBox"
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -362,7 +425,6 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* SEZIONI ADMIN */}
         {session && isAdmin && (
           <>
             {showQuotes && <AdminQuotes />}

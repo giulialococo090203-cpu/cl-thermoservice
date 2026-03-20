@@ -72,7 +72,9 @@ export default function DatorePanel() {
   const [selectedClauses, setSelectedClauses] = useState([]);
   const [manualTotal, setManualTotal] = useState("");
 
-  const [items, setItems] = useState([{ title: "Intervento", description: "", qty: 1, unit_price: 0 }]);
+  const [items, setItems] = useState([
+    { title: "Intervento", description: "", qty: 1, unit_price: 0 },
+  ]);
 
   const userEmail = session?.user?.email || "";
   const isEmployer = role === "employer";
@@ -97,12 +99,15 @@ export default function DatorePanel() {
       cursor: "pointer",
       whiteSpace: "nowrap",
     };
+
     if (variant === "dark") {
       return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
     }
+
     if (variant === "ghost") {
       return { ...base, background: "#fff", color: "#0b1224" };
     }
+
     if (variant === "soft") {
       return {
         ...base,
@@ -111,9 +116,11 @@ export default function DatorePanel() {
         border: "1px solid rgba(99,102,241,.25)",
       };
     }
+
     if (variant === "danger") {
       return { ...base, background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" };
     }
+
     return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
   };
 
@@ -637,6 +644,7 @@ export default function DatorePanel() {
   return (
     <div
       ref={containerRef}
+      className="datorePanelRoot"
       style={{
         minHeight: "100vh",
         padding: "28px 18px",
@@ -644,22 +652,148 @@ export default function DatorePanel() {
           "radial-gradient(1200px 600px at 15% 5%, rgba(59,130,246,0.10), transparent 55%), radial-gradient(1200px 600px at 85% 0%, rgba(244,63,94,0.10), transparent 55%), #f6f8fb",
       }}
     >
+      <style>{`
+        @media (max-width: 980px){
+          .datoreHeaderTop{
+            align-items: flex-start !important;
+          }
+
+          .datoreHeaderActions{
+            width: 100%;
+            justify-content: flex-start !important;
+            flex-wrap: wrap;
+          }
+
+          .datoreAuthGrid,
+          .datoreCustomerGrid{
+            grid-template-columns: 1fr !important;
+          }
+
+          .datoreTotalsRow{
+            flex-direction: column !important;
+            align-items: stretch !important;
+          }
+
+          .datoreTotalsRight{
+            margin-left: 0 !important;
+            width: 100%;
+            justify-content: stretch !important;
+          }
+
+          .datoreTotalsRight > *{
+            width: 100%;
+          }
+
+          .datoreActionRow{
+            flex-direction: column !important;
+            align-items: stretch !important;
+          }
+
+          .datoreActionRow > button{
+            width: 100%;
+          }
+
+          .datoreFilesToolbar{
+            width: 100%;
+          }
+        }
+
+        @media (max-width: 860px){
+          .datoreItemRow{
+            grid-template-columns: 1fr !important;
+          }
+
+          .datoreFilesHead,
+          .datoreFilesRow{
+            grid-template-columns: 44px 1fr !important;
+          }
+
+          .datoreFilesHeadStorage,
+          .datoreFilesHeadActions{
+            display: none !important;
+          }
+
+          .datoreFilesMeta{
+            display: grid !important;
+            gap: 8px;
+            min-width: 0;
+          }
+
+          .datoreFilesPath{
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: unset !important;
+            word-break: break-word;
+          }
+
+          .datoreFilesActions{
+            justify-content: flex-start !important;
+          }
+        }
+
+        @media (max-width: 640px){
+          .datorePanelRoot{
+            padding: 16px 10px !important;
+          }
+
+          .datoreBigTitle{
+            font-size: 32px !important;
+          }
+
+          .datoreCard{
+            padding: 16px !important;
+            border-radius: 22px !important;
+          }
+
+          .datoreBadge{
+            max-width: 100% !important;
+          }
+
+          .datoreFilesToolbar{
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+          }
+
+          .datoreFilesToolbar > button{
+            width: 100%;
+          }
+        }
+
+        @media (max-width: 440px){
+          .datoreFilesToolbar{
+            grid-template-columns: 1fr !important;
+          }
+
+          .datoreBigTitle{
+            font-size: 28px !important;
+          }
+        }
+      `}</style>
+
       <div style={{ maxWidth: 1180, margin: "0 auto" }}>
-        <div style={{ ...cardStyle, padding: 24 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <div className="datoreCard" style={{ ...cardStyle, padding: 24 }}>
+          <div
+            className="datoreHeaderTop"
+            style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}
+          >
             <div>
-              <div style={{ fontSize: 54, fontWeight: 950, color: "#0b1224", lineHeight: 1 }}>Area Datore</div>
+              <div className="datoreBigTitle" style={{ fontSize: 54, fontWeight: 950, color: "#0b1224", lineHeight: 1 }}>
+                Area Datore
+              </div>
               <div style={{ marginTop: 10, color: "#475569", fontWeight: 800 }}>
                 Accesso riservato (role richiesto: <b>employer</b>)
               </div>
               {company?.name ? (
-                <div style={{ marginTop: 10, color: "#0b1224", fontWeight: 900 }}>Azienda: {company.name}</div>
+                <div style={{ marginTop: 10, color: "#0b1224", fontWeight: 900 }}>
+                  Azienda: {company.name}
+                </div>
               ) : null}
             </div>
 
             {session && (
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div className="datoreHeaderActions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span
+                  className="datoreBadge"
                   style={{
                     padding: "10px 14px",
                     borderRadius: 999,
@@ -684,14 +818,20 @@ export default function DatorePanel() {
           </div>
         </div>
 
-        <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
+        <div className="datoreCard" style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
           {authLoading ? (
             <div style={{ fontWeight: 900, color: "#0b1224" }}>Caricamento…</div>
           ) : !session ? (
-            <form onSubmit={handleLogin} style={{ display: "grid", gap: 14, maxWidth: 620 }}>
+            <form onSubmit={handleLogin} className="datoreAuthGrid" style={{ display: "grid", gap: 14, maxWidth: 620 }}>
               {authError && <div style={dangerBox}>Errore login: {authError}</div>}
 
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email datore" autoComplete="email" style={inputStyle} />
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email datore"
+                autoComplete="email"
+                style={inputStyle}
+              />
               <input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -758,7 +898,7 @@ export default function DatorePanel() {
               onDownloadPdf={handleDownloadRequestsPdf}
             />
 
-            <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
+            <div className="datoreCard" style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
               <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
                 Generazione preventivo (PDF + salvataggio)
               </div>
@@ -768,13 +908,15 @@ export default function DatorePanel() {
               </div>
 
               {!showQuoteForm ? (
-                <div style={hintBox}>Seleziona una richiesta e clicca “Usa richiesta” oppure premi “Nuovo preventivo”.</div>
+                <div style={hintBox}>
+                  Seleziona una richiesta e clicca “Usa richiesta” oppure premi “Nuovo preventivo”.
+                </div>
               ) : (
                 <>
                   {createError && <div style={dangerBox}>{createError}</div>}
                   {createOk && <div style={okBox}>{createOk}</div>}
 
-                  <div style={{ marginTop: 14, display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
+                  <div className="datoreCustomerGrid" style={{ marginTop: 14, display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
                     <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nome cliente" style={inputStyle} />
                     <input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} placeholder="Email cliente" style={inputStyle} />
                     <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Telefono cliente" style={inputStyle} />
@@ -800,6 +942,7 @@ export default function DatorePanel() {
                     {items.map((it, idx) => (
                       <div
                         key={idx}
+                        className="datoreItemRow"
                         style={{
                           background: "#fff",
                           border: "1px solid rgba(15,23,42,0.10)",
@@ -826,7 +969,12 @@ export default function DatorePanel() {
                           style={miniInput}
                         />
 
-                        <button style={{ ...btn("danger"), height: 44 }} onClick={() => removeItem(idx)} type="button" disabled={items.length === 1}>
+                        <button
+                          style={{ ...btn("danger"), height: 44 }}
+                          onClick={() => removeItem(idx)}
+                          type="button"
+                          disabled={items.length === 1}
+                        >
                           Rimuovi
                         </button>
                       </div>
@@ -854,13 +1002,7 @@ export default function DatorePanel() {
                           }}
                         >
                           <input type="checkbox" checked={checked} onChange={() => toggleClause(clause.key)} style={{ marginTop: 3 }} />
-                          <span
-                            style={{
-                              fontWeight: 800,
-                              color: "#334155",
-                              lineHeight: 1.55,
-                            }}
-                          >
+                          <span style={{ fontWeight: 800, color: "#334155", lineHeight: 1.55 }}>
                             {clause.label}
                           </span>
                         </label>
@@ -869,6 +1011,7 @@ export default function DatorePanel() {
                   </div>
 
                   <div
+                    className="datoreTotalsRow"
                     style={{
                       marginTop: 12,
                       display: "flex",
@@ -883,6 +1026,7 @@ export default function DatorePanel() {
                     </button>
 
                     <div
+                      className="datoreTotalsRight"
                       style={{
                         marginLeft: "auto",
                         display: "flex",
@@ -896,10 +1040,7 @@ export default function DatorePanel() {
                         value={manualTotal}
                         onChange={(e) => setManualTotal(e.target.value)}
                         placeholder="Totale manuale (€)"
-                        style={{
-                          ...miniInput,
-                          width: 180,
-                        }}
+                        style={{ ...miniInput, width: 180 }}
                       />
                       <div style={pill}>Imponibile: € {fmtEuro(effectiveTotals.subtotal)}</div>
                       <div style={{ ...pill, fontWeight: 950 }}>Totale: € {fmtEuro(effectiveTotals.total)}</div>
@@ -907,6 +1048,7 @@ export default function DatorePanel() {
                   </div>
 
                   <div
+                    className="datoreActionRow"
                     style={{
                       marginTop: 14,
                       display: "flex",
@@ -932,11 +1074,7 @@ export default function DatorePanel() {
                     </button>
 
                     <button
-                      style={{
-                        ...btn("ghost"),
-                        flex: "0 0 auto",
-                        minWidth: 140,
-                      }}
+                      style={{ ...btn("ghost"), flex: "0 0 auto", minWidth: 140 }}
                       type="button"
                       onClick={resetQuoteForm}
                       disabled={creating}
@@ -948,7 +1086,7 @@ export default function DatorePanel() {
               )}
             </div>
 
-            <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
+            <div className="datoreCard" style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
               <QuoteArchiveManager
                 companyId={companyId}
                 onDone={async () => {
@@ -960,7 +1098,7 @@ export default function DatorePanel() {
               />
             </div>
 
-            <div ref={filesSectionRef} style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
+            <div ref={filesSectionRef} className="datoreCard" style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <div>
                   <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
@@ -971,7 +1109,7 @@ export default function DatorePanel() {
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <div className="datoreFilesToolbar" style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <button style={btn("ghost")} onClick={loadFiles}>
                     Aggiorna
                   </button>
@@ -1019,6 +1157,7 @@ export default function DatorePanel() {
                 }}
               >
                 <div
+                  className="datoreFilesHead"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "56px 220px 1fr 140px",
@@ -1032,8 +1171,10 @@ export default function DatorePanel() {
                 >
                   <div></div>
                   <div>Creato</div>
-                  <div>Storage path</div>
-                  <div style={{ textAlign: "right" }}>Azioni</div>
+                  <div className="datoreFilesHeadStorage">Storage path</div>
+                  <div className="datoreFilesHeadActions" style={{ textAlign: "right" }}>
+                    Azioni
+                  </div>
                 </div>
 
                 {filesLoading ? (
@@ -1048,6 +1189,7 @@ export default function DatorePanel() {
                     return (
                       <div
                         key={f.id}
+                        className="datoreFilesRow"
                         onClick={() => togglePath(f.storage_path)}
                         onDoubleClick={(e) => {
                           e.stopPropagation();
@@ -1081,6 +1223,46 @@ export default function DatorePanel() {
                           />
                         </div>
 
+                        <div className="datoreFilesMeta">
+                          <div style={{ fontWeight: 900 }}>
+                            {fmtDateTime(f.created_at)}
+                            {last ? (
+                              <span style={{ marginLeft: 10, color: "#16a34a", fontWeight: 950 }}>NUOVO</span>
+                            ) : null}
+                          </div>
+
+                          <div
+                            className="datoreFilesPath"
+                            style={{
+                              fontWeight: 800,
+                              color: "#334155",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {f.storage_path}
+                          </div>
+
+                          <div className="datoreFilesActions" style={{ display: "flex", justifyContent: "flex-end" }}>
+                            <button
+                              type="button"
+                              style={{ ...btn("ghost"), padding: "10px 14px" }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newTab = window.open("about:blank", "_blank");
+
+                                openSavedPdf(f.storage_path, newTab).catch((err) => {
+                                  console.error(err);
+                                  alert(err?.message || "Errore apertura PDF.");
+                                });
+                              }}
+                            >
+                              Apri
+                            </button>
+                          </div>
+                        </div>
+
                         <div style={{ fontWeight: 900 }}>
                           {fmtDateTime(f.created_at)}
                           {last ? (
@@ -1089,6 +1271,7 @@ export default function DatorePanel() {
                         </div>
 
                         <div
+                          className="datoreFilesPath"
                           style={{
                             fontWeight: 800,
                             color: "#334155",
@@ -1100,7 +1283,7 @@ export default function DatorePanel() {
                           {f.storage_path}
                         </div>
 
-                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                        <div className="datoreFilesActions" style={{ display: "flex", justifyContent: "flex-end" }}>
                           <button
                             type="button"
                             style={{ ...btn("ghost"), padding: "10px 14px" }}
