@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../supabaseClient";
 
 import QuoteArchiveManager from "./QuoteArchiveManager";
-
 import {
   fetchUserRole,
   fetchMyCompanyId,
@@ -16,7 +15,6 @@ import {
   uploadPdfToStorage,
   createSignedUrl,
 } from "./datoreApi";
-
 import { buildRequestsPdfBlob, buildQuotePdfBlob, fmtDateTime, fmtEuro } from "./pdf";
 import {
   computeTotals,
@@ -713,6 +711,10 @@ export default function DatorePanel() {
             display: none !important;
           }
 
+          .datoreFilesDesktop{
+            display: none !important;
+          }
+
           .datoreFilesMeta{
             display: grid !important;
             gap: 8px;
@@ -728,6 +730,16 @@ export default function DatorePanel() {
 
           .datoreFilesActions{
             justify-content: flex-start !important;
+          }
+        }
+
+        @media (min-width: 861px){
+          .datoreFilesMeta{
+            display: none !important;
+          }
+
+          .datoreFilesDesktop{
+            display: contents !important;
           }
         }
 
@@ -1227,7 +1239,9 @@ export default function DatorePanel() {
                           <div style={{ fontWeight: 900 }}>
                             {fmtDateTime(f.created_at)}
                             {last ? (
-                              <span style={{ marginLeft: 10, color: "#16a34a", fontWeight: 950 }}>NUOVO</span>
+                              <span style={{ marginLeft: 10, color: "#16a34a", fontWeight: 950 }}>
+                                NUOVO
+                              </span>
                             ) : null}
                           </div>
 
@@ -1244,7 +1258,7 @@ export default function DatorePanel() {
                             {f.storage_path}
                           </div>
 
-                          <div className="datoreFilesActions" style={{ display: "flex", justifyContent: "flex-end" }}>
+                          <div className="datoreFilesActions" style={{ display: "flex", justifyContent: "flex-start" }}>
                             <button
                               type="button"
                               style={{ ...btn("ghost"), padding: "10px 14px" }}
@@ -1263,15 +1277,17 @@ export default function DatorePanel() {
                           </div>
                         </div>
 
-                        <div style={{ fontWeight: 900 }}>
+                        <div className="datoreFilesDesktop" style={{ fontWeight: 900 }}>
                           {fmtDateTime(f.created_at)}
                           {last ? (
-                            <span style={{ marginLeft: 10, color: "#16a34a", fontWeight: 950 }}>NUOVO</span>
+                            <span style={{ marginLeft: 10, color: "#16a34a", fontWeight: 950 }}>
+                              NUOVO
+                            </span>
                           ) : null}
                         </div>
 
                         <div
-                          className="datoreFilesPath"
+                          className="datoreFilesDesktop datoreFilesPath"
                           style={{
                             fontWeight: 800,
                             color: "#334155",
@@ -1283,7 +1299,10 @@ export default function DatorePanel() {
                           {f.storage_path}
                         </div>
 
-                        <div className="datoreFilesActions" style={{ display: "flex", justifyContent: "flex-end" }}>
+                        <div
+                          className="datoreFilesDesktop datoreFilesActions"
+                          style={{ display: "flex", justifyContent: "flex-end" }}
+                        >
                           <button
                             type="button"
                             style={{ ...btn("ghost"), padding: "10px 14px" }}
