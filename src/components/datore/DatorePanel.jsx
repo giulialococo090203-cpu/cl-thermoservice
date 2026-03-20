@@ -444,13 +444,27 @@ export default function DatorePanel() {
 
   // Apri PDF salvato
   const openSavedPdf = async (storagePath) => {
-    const signedUrl = await createSignedUrl(storagePath, 300);
+    const newTab = window.open("", "_blank");
 
-    if (!signedUrl) {
-      throw new Error("Signed URL non disponibile (controlla createSignedUrl in datoreApi).");
+    if (!newTab) {
+      throw new Error("Il browser ha bloccato l'apertura della nuova scheda.");
     }
 
-    window.open(signedUrl, "_blank", "noopener,noreferrer");
+    try {
+      newTab.document.write("<p style='font-family:Arial,sans-serif;padding:16px'>Apertura PDF...</p>");
+
+      const signedUrl = await createSignedUrl(storagePath, 300);
+
+      if (!signedUrl) {
+        newTab.close();
+        throw new Error("Signed URL non disponibile (controlla createSignedUrl in datoreApi).");
+      }
+
+      newTab.location.href = signedUrl;
+    } catch (err) {
+      newTab.close();
+      throw err;
+    }
   };
 
   // Download PDF salvato
