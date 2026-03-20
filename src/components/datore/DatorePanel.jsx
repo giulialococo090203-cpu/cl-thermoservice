@@ -116,7 +116,12 @@ export default function DatorePanel() {
     }
 
     if (variant === "danger") {
-      return { ...base, background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" };
+      return {
+        ...base,
+        background: "#fee2e2",
+        color: "#991b1b",
+        border: "1px solid #fecaca",
+      };
     }
 
     return { ...base, background: "#0b1224", color: "#fff", border: "1px solid #0b1224" };
@@ -701,45 +706,35 @@ export default function DatorePanel() {
             grid-template-columns: 1fr !important;
           }
 
-          .datoreFilesHead,
-          .datoreFilesRow{
-            grid-template-columns: 44px 1fr !important;
-          }
-
-          .datoreFilesHeadStorage,
-          .datoreFilesHeadActions{
+          .datoreFilesHead{
             display: none !important;
           }
 
-          .datoreFilesDesktop{
+          .datoreFilesDesktopRow{
             display: none !important;
           }
 
-          .datoreFilesMeta{
+          .datoreFilesMobileRow{
+            display: block !important;
+          }
+
+          .datoreFilesToolbar{
             display: grid !important;
-            gap: 8px;
-            min-width: 0;
+            grid-template-columns: 1fr 1fr !important;
           }
 
-          .datoreFilesPath{
-            white-space: normal !important;
-            overflow: visible !important;
-            text-overflow: unset !important;
-            word-break: break-word;
-          }
-
-          .datoreFilesActions{
-            justify-content: flex-start !important;
+          .datoreFilesToolbar > button{
+            width: 100%;
           }
         }
 
         @media (min-width: 861px){
-          .datoreFilesMeta{
+          .datoreFilesMobileRow{
             display: none !important;
           }
 
-          .datoreFilesDesktop{
-            display: contents !important;
+          .datoreFilesDesktopRow{
+            display: grid !important;
           }
         }
 
@@ -760,15 +755,6 @@ export default function DatorePanel() {
           .datoreBadge{
             max-width: 100% !important;
           }
-
-          .datoreFilesToolbar{
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-          }
-
-          .datoreFilesToolbar > button{
-            width: 100%;
-          }
         }
 
         @media (max-width: 440px){
@@ -786,10 +772,23 @@ export default function DatorePanel() {
         <div className="datoreCard" style={{ ...cardStyle, padding: 24 }}>
           <div
             className="datoreHeaderTop"
-            style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 16,
+              flexWrap: "wrap",
+            }}
           >
             <div>
-              <div className="datoreBigTitle" style={{ fontSize: 54, fontWeight: 950, color: "#0b1224", lineHeight: 1 }}>
+              <div
+                className="datoreBigTitle"
+                style={{
+                  fontSize: 54,
+                  fontWeight: 950,
+                  color: "#0b1224",
+                  lineHeight: 1,
+                }}
+              >
                 Area Datore
               </div>
               <div style={{ marginTop: 10, color: "#475569", fontWeight: 800 }}>
@@ -928,7 +927,10 @@ export default function DatorePanel() {
                   {createError && <div style={dangerBox}>{createError}</div>}
                   {createOk && <div style={okBox}>{createOk}</div>}
 
-                  <div className="datoreCustomerGrid" style={{ marginTop: 14, display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
+                  <div
+                    className="datoreCustomerGrid"
+                    style={{ marginTop: 14, display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}
+                  >
                     <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Nome cliente" style={inputStyle} />
                     <input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} placeholder="Email cliente" style={inputStyle} />
                     <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Telefono cliente" style={inputStyle} />
@@ -980,7 +982,6 @@ export default function DatorePanel() {
                           placeholder="Prezzo finale (€)"
                           style={miniInput}
                         />
-
                         <button
                           style={{ ...btn("danger"), height: 44 }}
                           onClick={() => removeItem(idx)}
@@ -1131,7 +1132,6 @@ export default function DatorePanel() {
                   <button style={btn("ghost")} type="button" onClick={deselectAllFiles} disabled={!selectedPaths.length}>
                     Deseleziona
                   </button>
-
                   <button
                     style={{
                       ...btn("dark"),
@@ -1143,7 +1143,6 @@ export default function DatorePanel() {
                   >
                     Scarica selezionati ({selectedPaths.length})
                   </button>
-
                   <button
                     style={{
                       ...btn("danger"),
@@ -1183,10 +1182,8 @@ export default function DatorePanel() {
                 >
                   <div></div>
                   <div>Creato</div>
-                  <div className="datoreFilesHeadStorage">Storage path</div>
-                  <div className="datoreFilesHeadActions" style={{ textAlign: "right" }}>
-                    Azioni
-                  </div>
+                  <div>Storage path</div>
+                  <div style={{ textAlign: "right" }}>Azioni</div>
                 </div>
 
                 {filesLoading ? (
@@ -1199,43 +1196,42 @@ export default function DatorePanel() {
                     const last = lastCreatedStoragePath === f.storage_path;
 
                     return (
-                      <div
-                        key={f.id}
-                        className="datoreFilesRow"
-                        onClick={() => togglePath(f.storage_path)}
-                        onDoubleClick={(e) => {
-                          e.stopPropagation();
-                          const newTab = window.open("about:blank", "_blank");
+                      <div key={f.id}>
+                        <div
+                          className="datoreFilesDesktopRow"
+                          onClick={() => togglePath(f.storage_path)}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            const newTab = window.open("about:blank", "_blank");
 
-                          openSavedPdf(f.storage_path, newTab).catch((err) => {
-                            console.error(err);
-                            alert(err?.message || "Errore apertura PDF.");
-                          });
-                        }}
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "56px 220px 1fr 140px",
-                          padding: "12px 10px",
-                          borderTop: "1px solid rgba(15,23,42,0.08)",
-                          alignItems: "center",
-                          background: checked ? "rgba(99,102,241,0.06)" : "#fff",
-                          cursor: "pointer",
-                          outline: last ? "2px solid rgba(34,197,94,.45)" : "none",
-                          outlineOffset: "-2px",
-                          gap: 10,
-                        }}
-                        title="Clic singolo: seleziona • doppio clic: apri PDF"
-                      >
-                        <div style={{ display: "flex", justifyContent: "center" }}>
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => togglePath(f.storage_path)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
+                            openSavedPdf(f.storage_path, newTab).catch((err) => {
+                              console.error(err);
+                              alert(err?.message || "Errore apertura PDF.");
+                            });
+                          }}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "56px 220px 1fr 140px",
+                            padding: "12px 10px",
+                            borderTop: "1px solid rgba(15,23,42,0.08)",
+                            alignItems: "center",
+                            background: checked ? "rgba(99,102,241,0.06)" : "#fff",
+                            cursor: "pointer",
+                            outline: last ? "2px solid rgba(34,197,94,.45)" : "none",
+                            outlineOffset: "-2px",
+                            gap: 10,
+                          }}
+                          title="Clic singolo: seleziona • doppio clic: apri PDF"
+                        >
+                          <div style={{ display: "flex", justifyContent: "center" }}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => togglePath(f.storage_path)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
 
-                        <div className="datoreFilesMeta">
                           <div style={{ fontWeight: 900 }}>
                             {fmtDateTime(f.created_at)}
                             {last ? (
@@ -1246,7 +1242,6 @@ export default function DatorePanel() {
                           </div>
 
                           <div
-                            className="datoreFilesPath"
                             style={{
                               fontWeight: 800,
                               color: "#334155",
@@ -1258,7 +1253,7 @@ export default function DatorePanel() {
                             {f.storage_path}
                           </div>
 
-                          <div className="datoreFilesActions" style={{ display: "flex", justifyContent: "flex-start" }}>
+                          <div style={{ display: "flex", justifyContent: "flex-end" }}>
                             <button
                               type="button"
                               style={{ ...btn("ghost"), padding: "10px 14px" }}
@@ -1277,47 +1272,76 @@ export default function DatorePanel() {
                           </div>
                         </div>
 
-                        <div className="datoreFilesDesktop" style={{ fontWeight: 900 }}>
-                          {fmtDateTime(f.created_at)}
-                          {last ? (
-                            <span style={{ marginLeft: 10, color: "#16a34a", fontWeight: 950 }}>
-                              NUOVO
-                            </span>
-                          ) : null}
-                        </div>
-
                         <div
-                          className="datoreFilesDesktop datoreFilesPath"
+                          className="datoreFilesMobileRow"
                           style={{
-                            fontWeight: 800,
-                            color: "#334155",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            borderTop: "1px solid rgba(15,23,42,0.08)",
+                            background: checked ? "rgba(99,102,241,0.06)" : "#fff",
+                            padding: 12,
+                            cursor: "pointer",
+                            outline: last ? "2px solid rgba(34,197,94,.45)" : "none",
+                            outlineOffset: "-2px",
+                          }}
+                          onClick={() => togglePath(f.storage_path)}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            const newTab = window.open("about:blank", "_blank");
+
+                            openSavedPdf(f.storage_path, newTab).catch((err) => {
+                              console.error(err);
+                              alert(err?.message || "Errore apertura PDF.");
+                            });
                           }}
                         >
-                          {f.storage_path}
-                        </div>
+                          <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => togglePath(f.storage_path)}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{ marginTop: 4 }}
+                            />
 
-                        <div
-                          className="datoreFilesDesktop datoreFilesActions"
-                          style={{ display: "flex", justifyContent: "flex-end" }}
-                        >
-                          <button
-                            type="button"
-                            style={{ ...btn("ghost"), padding: "10px 14px" }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const newTab = window.open("about:blank", "_blank");
+                            <div style={{ minWidth: 0, flex: 1, display: "grid", gap: 8 }}>
+                              <div style={{ fontWeight: 900 }}>
+                                {fmtDateTime(f.created_at)}
+                                {last ? (
+                                  <span style={{ marginLeft: 10, color: "#16a34a", fontWeight: 950 }}>
+                                    NUOVO
+                                  </span>
+                                ) : null}
+                              </div>
 
-                              openSavedPdf(f.storage_path, newTab).catch((err) => {
-                                console.error(err);
-                                alert(err?.message || "Errore apertura PDF.");
-                              });
-                            }}
-                          >
-                            Apri
-                          </button>
+                              <div
+                                style={{
+                                  fontWeight: 800,
+                                  color: "#334155",
+                                  wordBreak: "break-word",
+                                  lineHeight: 1.45,
+                                }}
+                              >
+                                {f.storage_path}
+                              </div>
+
+                              <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                                <button
+                                  type="button"
+                                  style={{ ...btn("ghost"), padding: "10px 14px" }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newTab = window.open("about:blank", "_blank");
+
+                                    openSavedPdf(f.storage_path, newTab).catch((err) => {
+                                      console.error(err);
+                                      alert(err?.message || "Errore apertura PDF.");
+                                    });
+                                  }}
+                                >
+                                  Apri
+                                </button>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     );
