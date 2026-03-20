@@ -77,6 +77,8 @@ export default function AdminCertifications() {
     outline: "none",
     background: "#fff",
     width: "100%",
+    boxSizing: "border-box",
+    minWidth: 0,
   };
 
   const btn = (variant = "dark") => {
@@ -87,6 +89,7 @@ export default function AdminCertifications() {
       border: "1px solid rgba(15,23,42,0.12)",
       cursor: "pointer",
       whiteSpace: "nowrap",
+      minWidth: 0,
     };
     if (variant === "dark") {
       return {
@@ -228,16 +231,103 @@ export default function AdminCertifications() {
   };
 
   return (
-    <div style={cardStyle}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 12,
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
-      >
+    <div className="adminCertRoot" style={cardStyle}>
+      <style>{`
+        .adminCertRoot,
+        .adminCertRoot * {
+          box-sizing: border-box;
+        }
+
+        .adminCertTop {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .adminCertTopActions {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .adminCertSectionHead {
+          display: flex;
+          justify-content: space-between;
+          gap: 10px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .adminCertCardsGrid {
+          margin-top: 12px;
+          display: grid;
+          gap: 12px;
+        }
+
+        .adminCertCardBox {
+          background: #fff;
+          border: 1px solid rgba(15,23,42,0.10);
+          border-radius: 18px;
+          padding: 12px;
+          display: grid;
+          gap: 10px;
+          overflow: hidden;
+        }
+
+        .adminCertCardRowTop {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 220px 140px;
+          gap: 10px;
+          align-items: center;
+        }
+
+        @media (max-width: 900px) {
+          .adminCertRoot {
+            padding: 16px !important;
+            border-radius: 22px !important;
+          }
+
+          .adminCertTop {
+            align-items: stretch !important;
+          }
+
+          .adminCertTopActions {
+            width: 100%;
+            align-items: stretch !important;
+          }
+
+          .adminCertTopActions > * {
+            width: 100%;
+          }
+
+          .adminCertSectionHead {
+            align-items: stretch !important;
+          }
+
+          .adminCertSectionHead > * {
+            width: 100%;
+          }
+
+          .adminCertCardRowTop {
+            grid-template-columns: 1fr !important;
+          }
+
+          .adminCertCardRowTop > * {
+            width: 100% !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .adminCertRoot {
+            padding: 12px !important;
+          }
+        }
+      `}</style>
+
+      <div className="adminCertTop">
         <div>
           <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
             Sezione “Sicurezza & Qualità”
@@ -247,7 +337,7 @@ export default function AdminCertifications() {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <div className="adminCertTopActions">
           <div
             style={{
               padding: "10px 14px",
@@ -351,35 +441,17 @@ export default function AdminCertifications() {
               padding: 16,
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 10,
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}
-            >
+            <div className="adminCertSectionHead">
               <div style={{ fontWeight: 950, color: "#0b1224" }}>Card sezione</div>
               <button style={btn("soft")} type="button" onClick={addCard} disabled={saving}>
                 + Aggiungi card
               </button>
             </div>
 
-            <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+            <div className="adminCertCardsGrid">
               {cards.map((card, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    background: "#fff",
-                    border: "1px solid rgba(15,23,42,0.10)",
-                    borderRadius: 18,
-                    padding: 12,
-                    display: "grid",
-                    gap: 10,
-                  }}
-                >
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 220px 140px", gap: 10 }}>
+                <div key={idx} className="adminCertCardBox">
+                  <div className="adminCertCardRowTop">
                     <input
                       style={inputStyle}
                       value={card.title || ""}
@@ -410,7 +482,12 @@ export default function AdminCertifications() {
                   </div>
 
                   <textarea
-                    style={{ ...inputStyle, minHeight: 90, resize: "vertical", fontWeight: 750 }}
+                    style={{
+                      ...inputStyle,
+                      minHeight: 90,
+                      resize: "vertical",
+                      fontWeight: 750,
+                    }}
                     value={card.description || ""}
                     onChange={(e) => updateCard(idx, { description: e.target.value })}
                     placeholder="Descrizione card"
