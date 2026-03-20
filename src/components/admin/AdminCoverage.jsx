@@ -232,6 +232,10 @@ export default function AdminCoverage() {
   return (
     <div className="adminCoverageRoot" style={cardStyle}>
       <style>{`
+        .adminCoverageRoot * {
+          box-sizing: border-box;
+        }
+
         .adminCoverageTop {
           display: flex;
           justify-content: space-between;
@@ -247,10 +251,27 @@ export default function AdminCoverage() {
           align-items: center;
         }
 
+        .adminCoverageMainCard {
+          margin-top: 16px;
+          background: rgba(255,255,255,.9);
+          border: 1px solid rgba(15,23,42,0.10);
+          border-radius: 22px;
+          padding: 16px;
+          min-width: 0;
+          overflow: hidden;
+        }
+
         .adminCoverageCardRowTop {
           display: grid;
-          grid-template-columns: 1fr 220px 140px;
+          grid-template-columns: minmax(0, 1fr) 220px 140px;
           gap: 10px;
+          align-items: start;
+        }
+
+        @media (max-width: 900px) {
+          .adminCoverageCardRowTop {
+            grid-template-columns: 1fr !important;
+          }
         }
 
         @media (max-width: 720px) {
@@ -272,13 +293,17 @@ export default function AdminCoverage() {
             width: 100%;
           }
 
-          .adminCoverageCardRowTop {
-            grid-template-columns: 1fr !important;
+          .adminCoverageMainCard {
+            padding: 14px !important;
           }
         }
 
         @media (max-width: 480px) {
           .adminCoverageRoot {
+            padding: 12px !important;
+          }
+
+          .adminCoverageMainCard {
             padding: 12px !important;
           }
         }
@@ -308,11 +333,21 @@ export default function AdminCoverage() {
             {unsaved ? "● Modifiche non salvate" : "✓ Tutto salvato"}
           </div>
 
-          <button style={btn("dark")} type="button" onClick={save} disabled={saving || !unsaved}>
+          <button
+            style={btn("dark")}
+            type="button"
+            onClick={save}
+            disabled={saving || !unsaved}
+          >
             {saving ? "Salvataggio..." : "Salva"}
           </button>
 
-          <button style={btn("ghost")} type="button" onClick={load} disabled={saving}>
+          <button
+            style={btn("ghost")}
+            type="button"
+            onClick={load}
+            disabled={saving}
+          >
             Ricarica dal DB
           </button>
         </div>
@@ -356,15 +391,7 @@ export default function AdminCoverage() {
         </div>
       ) : (
         <>
-          <div
-            style={{
-              marginTop: 16,
-              background: "rgba(255,255,255,.9)",
-              border: "1px solid rgba(15,23,42,0.10)",
-              borderRadius: 22,
-              padding: 16,
-            }}
-          >
+          <div className="adminCoverageMainCard">
             <div style={{ fontWeight: 950, color: "#0b1224" }}>Testi principali</div>
 
             <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
@@ -389,15 +416,7 @@ export default function AdminCoverage() {
             </div>
           </div>
 
-          <div
-            style={{
-              marginTop: 16,
-              background: "rgba(255,255,255,.9)",
-              border: "1px solid rgba(15,23,42,0.10)",
-              borderRadius: 22,
-              padding: 16,
-            }}
-          >
+          <div className="adminCoverageMainCard">
             <div
               style={{
                 display: "flex",
@@ -424,6 +443,8 @@ export default function AdminCoverage() {
                     padding: 12,
                     display: "grid",
                     gap: 10,
+                    minWidth: 0,
+                    overflow: hidden,
                   }}
                 >
                   <div className="adminCoverageCardRowTop">
