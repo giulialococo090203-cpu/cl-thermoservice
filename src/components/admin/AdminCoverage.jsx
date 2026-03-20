@@ -230,16 +230,61 @@ export default function AdminCoverage() {
   };
 
   return (
-    <div style={cardStyle}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 12,
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
-      >
+    <div className="adminCoverageRoot" style={cardStyle}>
+      <style>{`
+        .adminCoverageTop {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .adminCoverageTopActions {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .adminCoverageCardRowTop {
+          display: grid;
+          grid-template-columns: 1fr 220px 140px;
+          gap: 10px;
+        }
+
+        @media (max-width: 720px) {
+          .adminCoverageRoot {
+            padding: 16px !important;
+            border-radius: 22px !important;
+          }
+
+          .adminCoverageTop {
+            align-items: flex-start !important;
+          }
+
+          .adminCoverageTopActions {
+            width: 100%;
+            align-items: stretch !important;
+          }
+
+          .adminCoverageTopActions > * {
+            width: 100%;
+          }
+
+          .adminCoverageCardRowTop {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .adminCoverageRoot {
+            padding: 12px !important;
+          }
+        }
+      `}</style>
+
+      <div className="adminCoverageTop">
         <div>
           <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
             Sezione “Zona di copertura”
@@ -249,7 +294,7 @@ export default function AdminCoverage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <div className="adminCoverageTopActions">
           <div
             style={{
               padding: "10px 14px",
@@ -381,7 +426,7 @@ export default function AdminCoverage() {
                     gap: 10,
                   }}
                 >
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 220px 140px", gap: 10 }}>
+                  <div className="adminCoverageCardRowTop">
                     <input
                       style={inputStyle}
                       value={card.title || ""}

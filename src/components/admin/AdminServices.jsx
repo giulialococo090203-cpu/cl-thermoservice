@@ -434,16 +434,119 @@ export default function AdminServices() {
   const iconLabel = (key) => ICON_OPTIONS_IT.find((o) => o.key === key)?.label || key;
 
   return (
-    <div style={cardStyle}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 12,
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
-      >
+    <div className="adminServicesRoot" style={cardStyle}>
+      <style>{`
+        .adminServicesTop {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .adminServicesTopActions {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .adminServicesCreateHead {
+          display: grid;
+          grid-template-columns: 1.2fr 300px 1fr;
+          gap: 12px;
+          align-items: center;
+        }
+
+        .adminServicesListRow {
+          display: grid;
+          grid-template-columns: 1fr 340px;
+          gap: 12px;
+          align-items: start;
+        }
+
+        .adminServicesRowMain {
+          display: flex;
+          gap: 12px;
+        }
+
+        .adminServicesEditTop {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+
+        .adminServicesActions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .adminServicesFileRow {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 12px;
+          border-radius: 14px;
+          border: 1px solid rgba(15,23,42,.10);
+          background: #fff;
+        }
+
+        @media (max-width: 980px) {
+          .adminServicesCreateHead,
+          .adminServicesListRow,
+          .adminServicesEditTop {
+            grid-template-columns: 1fr !important;
+          }
+
+          .adminServicesActions {
+            justify-content: flex-start !important;
+          }
+        }
+
+        @media (max-width: 720px) {
+          .adminServicesRoot {
+            padding: 16px !important;
+            border-radius: 22px !important;
+          }
+
+          .adminServicesTop {
+            align-items: flex-start !important;
+          }
+
+          .adminServicesTopActions {
+            width: 100%;
+            align-items: stretch !important;
+          }
+
+          .adminServicesTopActions > * {
+            width: 100%;
+          }
+
+          .adminServicesRowMain {
+            flex-direction: column !important;
+          }
+
+          .adminServicesFileRow {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+          }
+
+          .adminServicesActions > button {
+            width: 100%;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .adminServicesRoot {
+            padding: 12px !important;
+          }
+        }
+      `}</style>
+
+      <div className="adminServicesTop">
         <div>
           <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
             Gestione servizi (pubblico)
@@ -453,7 +556,7 @@ export default function AdminServices() {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <div className="adminServicesTopActions">
           <span
             style={{
               padding: "10px 12px",
@@ -502,14 +605,7 @@ export default function AdminServices() {
         <div style={{ fontWeight: 950, color: "#0b1224" }}>Aggiungi servizio</div>
 
         <form onSubmit={handleCreate} style={{ marginTop: 12, display: "grid", gap: 12 }}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1.2fr 300px 1fr",
-              gap: 12,
-              alignItems: "center",
-            }}
-          >
+          <div className="adminServicesCreateHead">
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -528,6 +624,7 @@ export default function AdminServices() {
                   display: "grid",
                   placeItems: "center",
                   background: "#f8fafc",
+                  flex: "0 0 auto",
                 }}
               >
                 <IconPreview size={20} />
@@ -608,6 +705,7 @@ export default function AdminServices() {
                       border: "1px solid rgba(15,23,42,.10)",
                       background: "#fff",
                       fontWeight: 800,
+                      wordBreak: "break-word",
                     }}
                   >
                     {f.name}
@@ -665,19 +763,16 @@ export default function AdminServices() {
             return (
               <div
                 key={r.id}
+                className="adminServicesListRow"
                 style={{
                   background: "#fff",
                   border: "1px solid rgba(15,23,42,0.10)",
                   borderRadius: 22,
                   padding: 16,
-                  display: "grid",
-                  gridTemplateColumns: "1fr 340px",
-                  gap: 12,
-                  alignItems: "start",
                   opacity: r.is_active ? 1 : 0.65,
                 }}
               >
-                <div style={{ display: "flex", gap: 12 }}>
+                <div className="adminServicesRowMain">
                   <div
                     style={{
                       width: 54,
@@ -693,7 +788,7 @@ export default function AdminServices() {
                     <RowIcon size={22} />
                   </div>
 
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     {!isEditing ? (
                       <>
                         <div
@@ -734,6 +829,7 @@ export default function AdminServices() {
                             fontWeight: 750,
                             color: "#334155",
                             lineHeight: 1.6,
+                            wordBreak: "break-word",
                           }}
                         >
                           {r.description}
@@ -760,6 +856,7 @@ export default function AdminServices() {
                                   fontWeight: 800,
                                   color: "#1d4ed8",
                                   textDecoration: "none",
+                                  wordBreak: "break-word",
                                 }}
                               >
                                 <FileText size={16} />
@@ -779,7 +876,7 @@ export default function AdminServices() {
                           disabled={loading}
                         />
 
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div className="adminServicesEditTop">
                           <select
                             value={draft.icon}
                             onChange={(e) => setDraft((p) => ({ ...p, icon: e.target.value }))}
@@ -832,16 +929,7 @@ export default function AdminServices() {
                               {draft.files.map((f, idx) => (
                                 <div
                                   key={`${f.name}-${idx}`}
-                                  style={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                    gap: 10,
-                                    padding: "10px 12px",
-                                    borderRadius: 14,
-                                    border: "1px solid rgba(15,23,42,.10)",
-                                    background: "#fff",
-                                  }}
+                                  className="adminServicesFileRow"
                                 >
                                   <a
                                     href={f.url}
@@ -854,6 +942,7 @@ export default function AdminServices() {
                                       fontWeight: 800,
                                       color: "#1d4ed8",
                                       textDecoration: "none",
+                                      wordBreak: "break-word",
                                     }}
                                   >
                                     <FileText size={16} />
@@ -908,6 +997,7 @@ export default function AdminServices() {
                                     border: "1px solid rgba(15,23,42,.10)",
                                     background: "#fff",
                                     fontWeight: 800,
+                                    wordBreak: "break-word",
                                   }}
                                 >
                                   {f.name}
@@ -921,14 +1011,7 @@ export default function AdminServices() {
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    gap: 10,
-                    flexWrap: "wrap",
-                  }}
-                >
+                <div className="adminServicesActions">
                   {!isEditing ? (
                     <>
                       <button
@@ -979,14 +1062,6 @@ export default function AdminServices() {
                     </>
                   )}
                 </div>
-
-                <style>{`
-                  @media (max-width: 980px){
-                    div[style*="grid-template-columns: 1fr 340px"]{
-                      grid-template-columns: 1fr !important;
-                    }
-                  }
-                `}</style>
               </div>
             );
           })}
