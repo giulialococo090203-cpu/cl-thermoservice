@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { supabaseAdmin } from "../../supabaseAdminClient";
+import AdminServices from "./AdminServices";
+import AdminAbout from "./AdminAbout";
+import AdminCoverage from "./AdminCoverage";
 
 async function fetchUserRole(userId) {
   const { data, error } = await supabaseAdmin
@@ -132,9 +135,23 @@ export default function AdminPanel() {
     >
       <div style={{ maxWidth: 1150, margin: "0 auto" }}>
         <div style={{ ...cardStyle, padding: 24 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 16,
+              flexWrap: "wrap",
+            }}
+          >
             <div>
-              <div style={{ fontSize: 44, fontWeight: 950, color: "#0b1224", lineHeight: 1 }}>
+              <div
+                style={{
+                  fontSize: 44,
+                  fontWeight: 950,
+                  color: "#0b1224",
+                  lineHeight: 1,
+                }}
+              >
                 Dashboard Admin
               </div>
               <div style={{ marginTop: 10, color: "#475569", fontWeight: 800 }}>
@@ -143,7 +160,14 @@ export default function AdminPanel() {
             </div>
 
             {session && (
-              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
                 <span
                   style={{
                     padding: "8px 12px",
@@ -240,19 +264,25 @@ export default function AdminPanel() {
               Accesso negato: questo pannello è solo per admin.
             </div>
           ) : (
-            <div
-              style={{
-                marginTop: 16,
-                padding: 16,
-                borderRadius: 16,
-                background: "#dcfce7",
-                border: "1px solid #bbf7d0",
-                color: "#065f46",
-                fontWeight: 900,
-              }}
-            >
-              AdminPanel minimale caricato correttamente
-            </div>
+            <>
+              <div
+                style={{
+                  marginTop: 16,
+                  padding: 16,
+                  borderRadius: 16,
+                  background: "#dcfce7",
+                  border: "1px solid #bbf7d0",
+                  color: "#065f46",
+                  fontWeight: 900,
+                }}
+              >
+                AdminPanel minimale caricato correttamente
+              </div>
+
+              <AdminServices />
+              <AdminAbout />
+              <AdminCoverage />
+            </>
           )}
         </div>
       </div>
