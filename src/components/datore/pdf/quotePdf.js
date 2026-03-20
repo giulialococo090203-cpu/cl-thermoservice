@@ -3,7 +3,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { getLogoDataUrl } from "./getLogoDataUrl";
 
-// A4 in punti: 595 x 842 (pt)
+// A4 in punti
 const A4_W = 595.28;
 const A4_H = 841.89;
 
@@ -50,6 +50,7 @@ export async function buildQuotePdfBlob({
   const margin = 42;
   const pageW = A4_W;
   const pageH = A4_H;
+  const contentW = pageW - margin * 2;
 
   const companyName = safe(company?.name || "Azienda");
   const companyLine1 = safe(company?.address || "");
@@ -87,7 +88,16 @@ export async function buildQuotePdfBlob({
 
   if (logoDataUrl) {
     try {
-      doc.addImage(logoDataUrl, "PNG", margin, topY, logoBoxW, logoBoxH, undefined, "FAST");
+      doc.addImage(
+        logoDataUrl,
+        "PNG",
+        margin,
+        topY,
+        logoBoxW,
+        logoBoxH,
+        undefined,
+        "FAST"
+      );
     } catch {
       // ignore
     }
@@ -113,10 +123,11 @@ export async function buildQuotePdfBlob({
 
   y += 16;
   if (companyLine1) doc.text(companyLine1, companyX, y);
+
   y += 14;
   if (companyLine2) doc.text(companyLine2, companyX, y);
-  y += 14;
 
+  y += 14;
   const rightInfo = [
     companyPhone ? `Tel: ${companyPhone}` : "",
     companyEmail ? `Email: ${companyEmail}` : "",
@@ -146,9 +157,11 @@ export async function buildQuotePdfBlob({
 
   const headerBottomY = topY + logoBoxH + 18;
   doc.setFillColor(TEAL.r, TEAL.g, TEAL.b);
-  doc.rect(margin, headerBottomY, pageW - margin * 2, 10, "F");
+  doc.rect(margin, headerBottomY, contentW, 10, "F");
 
   const clientBoxY = headerBottomY + 22;
+  const leftColW = 240;
+  const rightColW = 220;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
@@ -172,15 +185,18 @@ export async function buildQuotePdfBlob({
 
   let cy = clientBoxY + 34;
   custLines.forEach((line) => {
-    doc.text(line, margin, cy);
-    cy += 14;
+    const wrapped = doc.splitTextToSize(line, leftColW);
+    doc.text(wrapped, margin, cy);
+    cy += wrapped.length * 14;
   });
 
-  const subjectX = pageW - margin;
+  const subjectLabelX = pageW - margin - rightColW;
+  const subjectTextX = pageW - margin;
+
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(MUTED.r, MUTED.g, MUTED.b);
-  doc.text("oggetto", subjectX - 200, clientBoxY, { align: "left" });
+  doc.text("oggetto", subjectLabelX, clientBoxY);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
@@ -189,10 +205,12 @@ export async function buildQuotePdfBlob({
   const subject = safe(header?.subject || header?.oggetto || "");
   const subjectText =
     subject || safe(header?.notes_internal || "") || "Preventivo lavori / intervento";
-  const subjectWrapped = doc.splitTextToSize(subjectText, 200);
-  doc.text(subjectWrapped, subjectX, clientBoxY + 18, { align: "right" });
+  const subjectWrapped = doc.splitTextToSize(subjectText, rightColW);
+  doc.text(subjectWrapped, subjectTextX, clientBoxY + 18, { align: "right" });
 
-  const afterClientY = Math.max(cy, clientBoxY + 48) + 10;
+  const subjectBottomY = clientBoxY + 18 + subjectWrapped.length * 14;
+  const afterClientY = Math.max(cy, subjectBottomY) + 10;
+
   doc.setDrawColor(230);
   doc.line(margin, afterClientY, pageW - margin, afterClientY);
 
@@ -206,7 +224,12 @@ export async function buildQuotePdfBlob({
     const unit = Number(it.unit_price || 0);
     const lineTotal = Number(it.line_total ?? qty * unit);
 
-    return [label || "-", qty ? qty.toLocaleString("it-IT") : "0", euro(unit), euro(lineTotal)];
+    return [
+      label || "-",
+      qty ? qty.toLocaleString("it-IT") : "0",
+      euro(unit),
+      euro(lineTotal),
+    ];
   });
 
   autoTable(doc, {
@@ -220,6 +243,9 @@ export async function buildQuotePdfBlob({
       cellPadding: 6,
       valign: "top",
       overflow: "linebreak",
+      textColor: [DARK.r, DARK.g, DARK.b],
+      lineColor: [220, 225, 230],
+      lineWidth: 0.6,
     },
     headStyles: {
       fillColor: [TEAL.r, TEAL.g, TEAL.b],
@@ -227,12 +253,13 @@ export async function buildQuotePdfBlob({
       fontStyle: "bold",
     },
     columnStyles: {
-      0: { cellWidth: 335 },
-      1: { cellWidth: 60, halign: "right" },
-      2: { cellWidth: 90, halign: "right" },
-      3: { cellWidth: 90, halign: "right" },
+      0: { cellWidth: 250 },
+      1: { cellWidth: 50, halign: "right" },
+      2: { cellWidth: 105, halign: "right" },
+      3: { cellWidth: 106, halign: "right" },
     },
     margin: { left: margin, right: margin },
+    tableWidth: contentW,
   });
 
   let cursorY = doc.lastAutoTable?.finalY || tableStartY + 40;
@@ -251,8 +278,8 @@ export async function buildQuotePdfBlob({
 
     let clauseY = cursorY + 16;
 
-    selectedClauses.forEach((clause, index) => {
-      const wrapped = doc.splitTextToSize(`• ${safe(clause)}`, pageW - margin * 2);
+    selectedClauses.forEach((clause) => {
+      const wrapped = doc.splitTextToSize(`• ${safe(clause)}`, contentW);
       doc.text(wrapped, margin, clauseY);
       clauseY += wrapped.length * 12 + 6;
     });
@@ -295,11 +322,11 @@ export async function buildQuotePdfBlob({
   doc.setFontSize(10);
 
   const notes = safe(header?.notes_internal || "");
-  const notesWrapped = doc.splitTextToSize(notes || "—", pageW - margin * 2);
+  const notesWrapped = doc.splitTextToSize(notes || "—", contentW);
   doc.text(notesWrapped, margin, footerY + 16);
 
   doc.setFillColor(TEAL.r, TEAL.g, TEAL.b);
-  doc.rect(margin, pageH - margin - 14, pageW - margin * 2, 14, "F");
+  doc.rect(margin, pageH - margin - 14, contentW, 14, "F");
 
   return doc.output("blob");
 }
