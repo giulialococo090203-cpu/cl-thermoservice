@@ -3,6 +3,7 @@ import { supabaseAdmin } from "../../supabaseAdminClient";
 import AdminServices from "./AdminServices";
 import AdminAbout from "./AdminAbout";
 import AdminCoverage from "./AdminCoverage";
+import AdminWorks from "./AdminWorks";
 
 async function fetchUserRole(userId) {
   const { data, error } = await supabaseAdmin
@@ -282,6 +283,7 @@ export default function AdminPanel() {
               <AdminServices />
               <AdminAbout />
               <AdminCoverage />
+              <AdminWorks />
             </>
           )}
         </div>
