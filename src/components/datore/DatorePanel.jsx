@@ -1171,7 +1171,7 @@ export default function DatorePanel() {
                   className="datoreFilesHead"
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "56px 220px 1fr 140px",
+                    gridTemplateColumns: "56px 220px 1fr",
                     background: "#f3f6fb",
                     padding: "12px 10px",
                     fontWeight: 950,
@@ -1183,7 +1183,6 @@ export default function DatorePanel() {
                   <div></div>
                   <div>Creato</div>
                   <div>Storage path</div>
-                  <div style={{ textAlign: "right" }}>Azioni</div>
                 </div>
 
                 {filesLoading ? (
@@ -1211,7 +1210,7 @@ export default function DatorePanel() {
                           }}
                           style={{
                             display: "grid",
-                            gridTemplateColumns: "56px 220px 1fr 140px",
+                            gridTemplateColumns: "56px 220px 1fr",
                             padding: "12px 10px",
                             borderTop: "1px solid rgba(15,23,42,0.08)",
                             alignItems: "center",
@@ -1251,24 +1250,6 @@ export default function DatorePanel() {
                             }}
                           >
                             {f.storage_path}
-                          </div>
-
-                          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                            <button
-                              type="button"
-                              style={{ ...btn("ghost"), padding: "10px 14px" }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const newTab = window.open("about:blank", "_blank");
-
-                                openSavedPdf(f.storage_path, newTab).catch((err) => {
-                                  console.error(err);
-                                  alert(err?.message || "Errore apertura PDF.");
-                                });
-                              }}
-                            >
-                              Apri
-                            </button>
                           </div>
                         </div>
 
@@ -1321,24 +1302,6 @@ export default function DatorePanel() {
                                 }}
                               >
                                 {f.storage_path}
-                              </div>
-
-                              <div style={{ display: "flex", justifyContent: "flex-start" }}>
-                                <button
-                                  type="button"
-                                  style={{ ...btn("ghost"), padding: "10px 14px" }}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const newTab = window.open("about:blank", "_blank");
-
-                                    openSavedPdf(f.storage_path, newTab).catch((err) => {
-                                      console.error(err);
-                                      alert(err?.message || "Errore apertura PDF.");
-                                    });
-                                  }}
-                                >
-                                  Apri
-                                </button>
                               </div>
                             </div>
                           </div>
