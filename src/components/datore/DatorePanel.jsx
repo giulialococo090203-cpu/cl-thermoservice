@@ -80,7 +80,9 @@ export default function DatorePanel() {
   const [selectedClauses, setSelectedClauses] = useState([]);
   const [manualTotal, setManualTotal] = useState("");
 
-  const [items, setItems] = useState([{ title: "Intervento", description: "", qty: 1, unit_price: 0 }]);
+  const [items, setItems] = useState([
+    { title: "Intervento", description: "", qty: 1, unit_price: 0 },
+  ]);
 
   const userEmail = session?.user?.email || "";
   const isEmployer = role === "employer";
@@ -389,7 +391,10 @@ export default function DatorePanel() {
   };
 
   const addItem = () => {
-    setItems((prev) => [...prev, { title: "Voce", description: "", qty: 1, unit_price: 0 }]);
+    setItems((prev) => [
+      ...prev,
+      { title: "Voce", description: "", qty: 1, unit_price: 0 },
+    ]);
   };
 
   const removeItem = (idx) => {
@@ -397,7 +402,9 @@ export default function DatorePanel() {
   };
 
   const toggleClause = (key) => {
-    setSelectedClauses((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+    setSelectedClauses((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
   };
 
   const cleanedForTotals = useMemo(() => {
@@ -651,15 +658,20 @@ export default function DatorePanel() {
       }}
     >
       <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+        {/* HEADER */}
         <div style={{ ...cardStyle, padding: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
             <div>
-              <div style={{ fontSize: 54, fontWeight: 950, color: "#0b1224", lineHeight: 1 }}>Area Datore</div>
+              <div style={{ fontSize: 54, fontWeight: 950, color: "#0b1224", lineHeight: 1 }}>
+                Area Datore
+              </div>
               <div style={{ marginTop: 10, color: "#475569", fontWeight: 800 }}>
                 Accesso riservato (role richiesto: <b>employer</b>)
               </div>
               {company?.name ? (
-                <div style={{ marginTop: 10, color: "#0b1224", fontWeight: 900 }}>Azienda: {company.name}</div>
+                <div style={{ marginTop: 10, color: "#0b1224", fontWeight: 900 }}>
+                  Azienda: {company.name}
+                </div>
               ) : null}
             </div>
 
@@ -690,6 +702,7 @@ export default function DatorePanel() {
           </div>
         </div>
 
+        {/* AUTH */}
         <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
           {authLoading ? (
             <div style={{ fontWeight: 900, color: "#0b1224" }}>Caricamento…</div>
@@ -741,6 +754,7 @@ export default function DatorePanel() {
           )}
         </div>
 
+        {/* CONTENUTO DATORE */}
         {session && isEmployer && !roleLoading && !roleError && (
           <>
             {liveNotice ? (
@@ -770,13 +784,14 @@ export default function DatorePanel() {
               onDownloadPdf={handleDownloadRequestsPdf}
             />
 
+            {/* CREA PREVENTIVO */}
             <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
               <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
                 Generazione preventivo (PDF + salvataggio)
               </div>
               <div style={{ marginTop: 6, color: "#475569", fontWeight: 800 }}>
-                Puoi generare da una richiesta <b>oppure</b> cliccare “Nuovo preventivo”. Il PDF verrà salvato nel
-                bucket <b>quote_files</b>.
+                Puoi generare da una richiesta <b>oppure</b> cliccare “Nuovo preventivo”. Il PDF verrà salvato nel bucket{" "}
+                <b>quote_files</b>.
               </div>
 
               {!showQuoteForm ? (
@@ -877,9 +892,17 @@ export default function DatorePanel() {
                     ))}
                   </div>
 
-                  <div style={{ marginTop: 16, fontWeight: 950, color: "#0b1224" }}>Clausole aggiuntive</div>
+                  <div style={{ marginTop: 16, fontWeight: 950, color: "#0b1224" }}>
+                    Clausole aggiuntive
+                  </div>
 
-                  <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "grid",
+                      gap: 10,
+                    }}
+                  >
                     {QUOTE_OPTIONAL_CLAUSES.map((clause) => {
                       const checked = selectedClauses.includes(clause.key);
 
@@ -997,6 +1020,7 @@ export default function DatorePanel() {
               )}
             </div>
 
+            {/* ARCHIVIO PREVENTIVI */}
             <div style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
               <QuoteArchiveManager
                 companyId={companyId}
@@ -1009,10 +1033,13 @@ export default function DatorePanel() {
               />
             </div>
 
+            {/* STORICO PDF */}
             <div ref={filesSectionRef} style={{ marginTop: 16, ...cardStyle, padding: 24 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <div>
-                  <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>Storico PDF preventivi salvati</div>
+                  <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
+                    Storico PDF preventivi salvati
+                  </div>
                   <div style={{ marginTop: 6, color: "#475569", fontWeight: 800 }}>
                     Seleziona uno o più PDF → poi scarica/elimina dai pulsanti.
                   </div>
@@ -1096,6 +1123,14 @@ export default function DatorePanel() {
                       <div
                         key={f.id}
                         onClick={() => togglePath(f.storage_path)}
+                        onDoubleClick={async () => {
+                          try {
+                            await openSavedPdf(f.storage_path);
+                          } catch (err) {
+                            console.error(err);
+                            alert(err?.message || "Errore apertura PDF.");
+                          }
+                        }}
                         style={{
                           display: "grid",
                           gridTemplateColumns: "56px 220px 1fr 140px",
@@ -1108,7 +1143,7 @@ export default function DatorePanel() {
                           outlineOffset: "-2px",
                           gap: 10,
                         }}
-                        title="Clicca per selezionare"
+                        title="Clic singolo: seleziona • doppio clic: apri PDF"
                       >
                         <div style={{ display: "flex", justifyContent: "center" }}>
                           <input
