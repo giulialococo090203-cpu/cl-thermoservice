@@ -77,6 +77,8 @@ export default function AdminCoverage() {
     outline: "none",
     background: "#fff",
     width: "100%",
+    boxSizing: "border-box",
+    minWidth: 0,
   };
 
   const btn = (variant = "dark") => {
@@ -87,6 +89,7 @@ export default function AdminCoverage() {
       border: "1px solid rgba(15,23,42,0.12)",
       cursor: "pointer",
       whiteSpace: "nowrap",
+      minWidth: 0,
     };
     if (variant === "dark") {
       return {
@@ -232,6 +235,11 @@ export default function AdminCoverage() {
   return (
     <div className="adminCoverageRoot" style={cardStyle}>
       <style>{`
+        .adminCoverageRoot,
+        .adminCoverageRoot * {
+          box-sizing: border-box;
+        }
+
         .adminCoverageTop {
           display: flex;
           justify-content: space-between;
@@ -247,20 +255,45 @@ export default function AdminCoverage() {
           align-items: center;
         }
 
-        .adminCoverageCardRowTop {
-          display: grid;
-          grid-template-columns: 1fr 220px 140px;
+        .adminCoverageSectionHead {
+          display: flex;
+          justify-content: space-between;
           gap: 10px;
+          flex-wrap: wrap;
+          align-items: center;
         }
 
-        @media (max-width: 720px) {
+        .adminCoverageCardsGrid {
+          margin-top: 12px;
+          display: grid;
+          gap: 12px;
+        }
+
+        .adminCoverageCardBox {
+          background: #fff;
+          border: 1px solid rgba(15,23,42,0.10);
+          border-radius: 18px;
+          padding: 12px;
+          display: grid;
+          gap: 10px;
+          overflow: hidden;
+        }
+
+        .adminCoverageCardRowTop {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 220px 140px;
+          gap: 10px;
+          align-items: center;
+        }
+
+        @media (max-width: 900px) {
           .adminCoverageRoot {
             padding: 16px !important;
             border-radius: 22px !important;
           }
 
           .adminCoverageTop {
-            align-items: flex-start !important;
+            align-items: stretch !important;
           }
 
           .adminCoverageTopActions {
@@ -272,8 +305,20 @@ export default function AdminCoverage() {
             width: 100%;
           }
 
+          .adminCoverageSectionHead {
+            align-items: stretch !important;
+          }
+
+          .adminCoverageSectionHead > * {
+            width: 100%;
+          }
+
           .adminCoverageCardRowTop {
             grid-template-columns: 1fr !important;
+          }
+
+          .adminCoverageCardRowTop > * {
+            width: 100% !important;
           }
         }
 
@@ -398,34 +443,16 @@ export default function AdminCoverage() {
               padding: 16,
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 10,
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}
-            >
+            <div className="adminCoverageSectionHead">
               <div style={{ fontWeight: 950, color: "#0b1224" }}>Card sezione</div>
               <button style={btn("soft")} type="button" onClick={addCard} disabled={saving}>
                 + Aggiungi card
               </button>
             </div>
 
-            <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+            <div className="adminCoverageCardsGrid">
               {cards.map((card, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    background: "#fff",
-                    border: "1px solid rgba(15,23,42,0.10)",
-                    borderRadius: 18,
-                    padding: 12,
-                    display: "grid",
-                    gap: 10,
-                  }}
-                >
+                <div key={idx} className="adminCoverageCardBox">
                   <div className="adminCoverageCardRowTop">
                     <input
                       style={inputStyle}
@@ -457,7 +484,12 @@ export default function AdminCoverage() {
                   </div>
 
                   <textarea
-                    style={{ ...inputStyle, minHeight: 90, resize: "vertical", fontWeight: 750 }}
+                    style={{
+                      ...inputStyle,
+                      minHeight: 90,
+                      resize: "vertical",
+                      fontWeight: 750,
+                    }}
                     value={card.description || ""}
                     onChange={(e) => updateCard(idx, { description: e.target.value })}
                     placeholder="Descrizione card"
