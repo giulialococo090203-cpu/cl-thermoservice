@@ -52,6 +52,12 @@ export async function buildQuotePdfBlob({
   const pageH = A4_H;
   const contentW = pageW - margin * 2;
 
+  // Tabella più stretta e centrata
+  const tableSideInset = 18;
+  const tableLeft = margin + tableSideInset;
+  const tableRight = margin + tableSideInset;
+  const tableW = pageW - tableLeft - tableRight;
+
   const companyName = safe(company?.name || "Azienda");
   const companyLine1 = safe(company?.address || "");
   const companyLine2 = [
@@ -229,26 +235,29 @@ export async function buildQuotePdfBlob({
     head: [["Descrizione", "Q.tà", "Prezzo", "Totale"]],
     body,
     theme: "grid",
-    tableWidth: contentW,
+    tableWidth: tableW,
     styles: {
       font: "helvetica",
-      fontSize: 9.5,
-      cellPadding: 6,
+      fontSize: 9.2,
+      cellPadding: 5,
       valign: "top",
       overflow: "linebreak",
+      lineColor: [210, 214, 220],
+      lineWidth: 0.6,
     },
     headStyles: {
       fillColor: [TEAL.r, TEAL.g, TEAL.b],
       textColor: 255,
       fontStyle: "bold",
+      halign: "left",
     },
     columnStyles: {
-      0: { cellWidth: 305 },
-      1: { cellWidth: 50, halign: "right" },
-      2: { cellWidth: 78, halign: "right" },
-      3: { cellWidth: 78, halign: "right" },
+      0: { cellWidth: 265 },
+      1: { cellWidth: 48, halign: "right" },
+      2: { cellWidth: 76, halign: "right" },
+      3: { cellWidth: 76, halign: "right" },
     },
-    margin: { left: margin, right: margin },
+    margin: { left: tableLeft, right: tableRight },
   });
 
   let cursorY = doc.lastAutoTable?.finalY || tableStartY + 40;
@@ -276,8 +285,8 @@ export async function buildQuotePdfBlob({
     cursorY = clauseY;
   }
 
-  const totalsBoxW = 240;
-  const totalsBoxX = pageW - margin - totalsBoxW;
+  const totalsBoxW = 220;
+  const totalsBoxX = pageW - margin - totalsBoxW - 6;
   const totalsBoxY = cursorY + 12;
 
   const subtotal = Number(totals?.subtotal || 0);
