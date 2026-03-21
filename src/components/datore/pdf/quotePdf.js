@@ -52,11 +52,10 @@ export async function buildQuotePdfBlob({
   const pageH = A4_H;
   const contentW = pageW - margin * 2;
 
-  // Tabella più stretta e centrata
-  const tableSideInset = 18;
-  const tableLeft = margin + tableSideInset;
-  const tableRight = margin + tableSideInset;
-  const tableW = pageW - tableLeft - tableRight;
+  // Tabella: larghezza fissa e centrata davvero
+  const tableW = 430;
+  const tableLeft = (pageW - tableW) / 2;
+  const tableRight = tableLeft;
 
   const companyName = safe(company?.name || "Azienda");
   const companyLine1 = safe(company?.address || "");
@@ -212,7 +211,7 @@ export async function buildQuotePdfBlob({
   doc.setDrawColor(230);
   doc.line(margin, afterClientY, pageW - margin, afterClientY);
 
-  const tableStartY = afterClientY + 14;
+  const tableStartY = afterClientY + 18;
 
   const body = (Array.isArray(items) ? items : []).map((it) => {
     const title = safe(it.title);
@@ -238,12 +237,13 @@ export async function buildQuotePdfBlob({
     tableWidth: tableW,
     styles: {
       font: "helvetica",
-      fontSize: 9.2,
+      fontSize: 9,
       cellPadding: 5,
       valign: "top",
       overflow: "linebreak",
       lineColor: [210, 214, 220],
       lineWidth: 0.6,
+      textColor: [40, 40, 40],
     },
     headStyles: {
       fillColor: [TEAL.r, TEAL.g, TEAL.b],
@@ -252,10 +252,10 @@ export async function buildQuotePdfBlob({
       halign: "left",
     },
     columnStyles: {
-      0: { cellWidth: 265 },
-      1: { cellWidth: 48, halign: "right" },
-      2: { cellWidth: 76, halign: "right" },
-      3: { cellWidth: 76, halign: "right" },
+      0: { cellWidth: 230 },
+      1: { cellWidth: 40, halign: "right" },
+      2: { cellWidth: 80, halign: "right" },
+      3: { cellWidth: 80, halign: "right" },
     },
     margin: { left: tableLeft, right: tableRight },
   });
@@ -286,8 +286,8 @@ export async function buildQuotePdfBlob({
   }
 
   const totalsBoxW = 220;
-  const totalsBoxX = pageW - margin - totalsBoxW - 6;
-  const totalsBoxY = cursorY + 12;
+  const totalsBoxX = pageW - margin - totalsBoxW;
+  const totalsBoxY = cursorY + 18;
 
   const subtotal = Number(totals?.subtotal || 0);
   const total = Number(totals?.total || 0);
@@ -309,7 +309,7 @@ export async function buildQuotePdfBlob({
   doc.text("Totale Documento", totalsBoxX + 14, row2Y);
   doc.text(euro(total), totalsBoxX + totalsBoxW - 14, row2Y, { align: "right" });
 
-  const footerY = totalsBoxY + 72;
+  const footerY = totalsBoxY + 88;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(MUTED.r, MUTED.g, MUTED.b);
