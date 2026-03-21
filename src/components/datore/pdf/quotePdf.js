@@ -52,10 +52,10 @@ export async function buildQuotePdfBlob({
   const pageH = A4_H;
   const contentW = pageW - margin * 2;
 
-  // Tabella allineata alla barra superiore
-  const tableLeft = margin;
-  const tableRight = margin;
-  const tableW = contentW;
+  // Tabella: larghezza fissa e centrata davvero
+  const tableW = 430;
+  const tableLeft = (pageW - tableW) / 2;
+  const tableRight = tableLeft;
 
   const companyName = safe(company?.name || "Azienda");
   const companyLine1 = safe(company?.address || "");
@@ -252,10 +252,10 @@ export async function buildQuotePdfBlob({
       halign: "left",
     },
     columnStyles: {
-      0: { cellWidth: 310 },
-      1: { cellWidth: 55, halign: "right" },
-      2: { cellWidth: 73, halign: "right" },
-      3: { cellWidth: 73, halign: "right" },
+      0: { cellWidth: 230 },
+      1: { cellWidth: 40, halign: "right" },
+      2: { cellWidth: 80, halign: "right" },
+      3: { cellWidth: 80, halign: "right" },
     },
     margin: { left: tableLeft, right: tableRight },
   });
@@ -286,7 +286,7 @@ export async function buildQuotePdfBlob({
   }
 
   const totalsBoxW = 220;
-  const totalsBoxX = tableLeft + tableW - totalsBoxW;
+  const totalsBoxX = pageW - margin - totalsBoxW;
   const totalsBoxY = cursorY + 18;
 
   const subtotal = Number(totals?.subtotal || 0);
