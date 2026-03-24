@@ -9,6 +9,7 @@ import AdminCertifications from "./AdminCertifications";
 import AdminFaq from "./AdminFaq";
 import AdminReviews from "./AdminReviews";
 import AdminWorks from "./AdminWorks";
+import AdminLinks from "./AdminLinks";
 import AdminBrands from "./AdminBrands";
 
 async function fetchUserRole(userId) {
@@ -49,7 +50,7 @@ export default function AdminPanel() {
       setSession(data?.session ?? null);
       setAuthLoading(false);
 
-      const { data: listener } = supabaseAdmin.auth.onAuthStateChange(
+      const { data: listener } = await supabaseAdmin.auth.onAuthStateChange(
         (_event, newSession) => setSession(newSession)
       );
       sub = listener?.subscription;
@@ -424,6 +425,7 @@ export default function AdminPanel() {
             <AdminFaq />
             <AdminReviews />
             <AdminWorks />
+            <AdminLinks />
             <AdminBrands />
           </>
         )}
