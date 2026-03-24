@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Reveal from "./Reveal";
-import { PhoneCall, Mail, MapPin, Clock, Navigation, X } from "lucide-react";
+import { PhoneCall, Mail, MapPin, Clock, Navigation, X, ChevronDown } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
 export default function ContactSection() {
@@ -14,6 +14,11 @@ export default function ContactSection() {
     []
   );
 
+  const PHONE_1_RAW = "091406911";
+  const PHONE_2_RAW = "0916763328";
+  const PHONE_1_LABEL = "091 406911";
+  const PHONE_2_LABEL = "091 6763328";
+
   const [pos, setPos] = useState(null);
   const [geoStatus, setGeoStatus] = useState("idle");
 
@@ -24,6 +29,8 @@ export default function ContactSection() {
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
   const [messaggio, setMessaggio] = useState("");
+
+  const [openPhoneChoice, setOpenPhoneChoice] = useState(false);
 
   useEffect(() => {
     if (!("geolocation" in navigator)) {
@@ -44,6 +51,14 @@ export default function ContactSection() {
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
     );
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = () => setOpenPhoneChoice(false);
+    if (openPhoneChoice) {
+      window.addEventListener("click", handleClickOutside);
+    }
+    return () => window.removeEventListener("click", handleClickOutside);
+  }, [openPhoneChoice]);
 
   const mapsDirectionsUrl = useMemo(() => {
     const base = "https://www.google.com/maps/dir/?api=1";
@@ -135,21 +150,69 @@ export default function ContactSection() {
 
         <div className="grid2" style={{ marginTop: 26 }}>
           <Reveal>
-            <a
+            <div
               className="card serviceCard cardHover"
-              href="tel:091406911"
-              style={{ textDecoration: "none", color: "inherit", minWidth: 0 }}
+              style={{
+                textDecoration: "none",
+                color: "inherit",
+                minWidth: 0,
+                alignItems: "flex-start",
+              }}
             >
               <div className="iconBox">
                 <PhoneCall size={22} />
               </div>
-              <div style={{ minWidth: 0 }}>
+
+              <div style={{ minWidth: 0, width: "100%" }}>
                 <div className="serviceTitle">Telefono</div>
-                <div style={{ fontWeight: 950, fontSize: "clamp(20px, 4vw, 24px)", lineHeight: 1.15 }}>
-                  091 406911
+
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 10,
+                    marginTop: 6,
+                  }}
+                >
+                  <a
+                    href={`tel:${PHONE_1_RAW}`}
+                    style={{
+                      fontWeight: 950,
+                      fontSize: "clamp(20px, 4vw, 24px)",
+                      lineHeight: 1.15,
+                      color: "#0b1220",
+                      textDecoration: "none",
+                    }}
+                  >
+                    {PHONE_1_LABEL}
+                  </a>
+
+                  <a
+                    href={`tel:${PHONE_2_RAW}`}
+                    style={{
+                      fontWeight: 950,
+                      fontSize: "clamp(20px, 4vw, 24px)",
+                      lineHeight: 1.15,
+                      color: "#0b1220",
+                      textDecoration: "none",
+                    }}
+                  >
+                    {PHONE_2_LABEL}
+                  </a>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    fontWeight: 700,
+                    opacity: 0.7,
+                    fontSize: 14,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  Clicca sul numero da chiamare
                 </div>
               </div>
-            </a>
+            </div>
           </Reveal>
 
           <Reveal>
@@ -262,25 +325,92 @@ export default function ContactSection() {
               Indicazioni
             </a>
 
-            <a
-              href="tel:091406911"
-              className="btnAnim"
-              style={{
-                padding: "14px 22px",
-                borderRadius: 18,
-                background: "#0b1220",
-                color: "white",
-                fontWeight: 900,
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-              }}
+            <div
+              style={{ position: "relative" }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <PhoneCall size={18} />
-              Chiama
-            </a>
+              <button
+                type="button"
+                className="btnAnim"
+                onClick={() => setOpenPhoneChoice((prev) => !prev)}
+                style={{
+                  padding: "14px 22px",
+                  borderRadius: 18,
+                  background: "#0b1220",
+                  color: "white",
+                  fontWeight: 900,
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <PhoneCall size={18} />
+                Chiama
+                <ChevronDown
+                  size={16}
+                  style={{
+                    transform: openPhoneChoice ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform .18s ease",
+                  }}
+                />
+              </button>
+
+              {openPhoneChoice && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    bottom: "calc(100% + 10px)",
+                    minWidth: 240,
+                    background: "rgba(255,255,255,.98)",
+                    border: "1px solid rgba(15,23,42,.10)",
+                    borderRadius: 18,
+                    boxShadow: "0 20px 50px rgba(15,23,42,.16)",
+                    padding: 10,
+                    display: "grid",
+                    gap: 8,
+                    zIndex: 50,
+                  }}
+                >
+                  <a
+                    href={`tel:${PHONE_1_RAW}`}
+                    style={{
+                      padding: "12px 14px",
+                      borderRadius: 14,
+                      background: "#fff",
+                      color: "#0b1220",
+                      fontWeight: 900,
+                      textDecoration: "none",
+                      border: "1px solid rgba(15,23,42,.08)",
+                      textAlign: "center",
+                    }}
+                  >
+                    {PHONE_1_LABEL}
+                  </a>
+
+                  <a
+                    href={`tel:${PHONE_2_RAW}`}
+                    style={{
+                      padding: "12px 14px",
+                      borderRadius: 14,
+                      background: "#fff",
+                      color: "#0b1220",
+                      fontWeight: 900,
+                      textDecoration: "none",
+                      border: "1px solid rgba(15,23,42,.08)",
+                      textAlign: "center",
+                    }}
+                  >
+                    {PHONE_2_LABEL}
+                  </a>
+                </div>
+              )}
+            </div>
 
             <a
               href="https://wa.me/393662085556"
@@ -436,7 +566,9 @@ export default function ContactSection() {
                   grid-template-columns: 1fr !important;
                 }
 
-                #contatti .contactCtaMobile a{
+                #contatti .contactCtaMobile a,
+                #contatti .contactCtaMobile button,
+                #contatti .contactCtaMobile > div{
                   width: 100% !important;
                 }
 

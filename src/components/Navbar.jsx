@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Menu, X, PhoneCall, Mail, MessageCircle } from "lucide-react";
+import { Menu, X, PhoneCall, Mail, MessageCircle, ChevronDown } from "lucide-react";
 import logo from "../assets/logo.png";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const [openPhoneMenu, setOpenPhoneMenu] = useState(false);
 
   const links = useMemo(
     () => [
@@ -20,9 +21,17 @@ export default function Navbar() {
     []
   );
 
+  const PHONE_1_RAW = "091406911";
+  const PHONE_2_RAW = "0916763328";
+  const PHONE_1_LABEL = "091 406911";
+  const PHONE_2_LABEL = "091 6763328";
+
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        setOpenPhoneMenu(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -36,7 +45,24 @@ export default function Navbar() {
     };
   }, [open]);
 
-  const close = () => setOpen(false);
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setOpenPhoneMenu(false);
+    };
+
+    if (openPhoneMenu) {
+      window.addEventListener("click", handleClickOutside);
+    }
+
+    return () => {
+      window.removeEventListener("click", handleClickOutside);
+    };
+  }, [openPhoneMenu]);
+
+  const close = () => {
+    setOpen(false);
+    setOpenPhoneMenu(false);
+  };
 
   const WHATSAPP_NUMBER = "3662085556";
   const whatsappUrl = `https://wa.me/39${WHATSAPP_NUMBER}?text=${encodeURIComponent(
@@ -112,24 +138,88 @@ export default function Navbar() {
         </nav>
 
         <div style={{ display: "flex", gap: 10, alignItems: "center", flex: "0 0 auto" }}>
-          <a
-            className="btnAnim navCallBtn"
-            href="tel:091406911"
-            style={{
-              padding: "10px 14px",
-              borderRadius: 14,
-              background: "#e53935",
-              color: "white",
-              fontWeight: 950,
-              textDecoration: "none",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              whiteSpace: "nowrap",
-            }}
+          <div
+            style={{ position: "relative" }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <PhoneCall size={18} /> <span className="navCallText">Chiama</span>
-          </a>
+            <button
+              type="button"
+              className="btnAnim navCallBtn"
+              onClick={() => setOpenPhoneMenu((prev) => !prev)}
+              style={{
+                padding: "10px 14px",
+                borderRadius: 14,
+                background: "#e53935",
+                color: "white",
+                fontWeight: 950,
+                border: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                whiteSpace: "nowrap",
+                cursor: "pointer",
+              }}
+            >
+              <PhoneCall size={18} />
+              <span className="navCallText">Chiama</span>
+              <ChevronDown
+                size={16}
+                style={{
+                  transform: openPhoneMenu ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform .18s ease",
+                }}
+              />
+            </button>
+
+            {openPhoneMenu && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 10px)",
+                  right: 0,
+                  minWidth: 220,
+                  background: "rgba(255,255,255,.98)",
+                  border: "1px solid rgba(15,23,42,.10)",
+                  borderRadius: 18,
+                  boxShadow: "0 20px 50px rgba(15,23,42,.16)",
+                  padding: 10,
+                  display: "grid",
+                  gap: 8,
+                  zIndex: 1200,
+                }}
+              >
+                <a
+                  href={`tel:${PHONE_1_RAW}`}
+                  style={{
+                    padding: "12px 14px",
+                    borderRadius: 14,
+                    background: "#fff",
+                    color: "#0b1220",
+                    fontWeight: 900,
+                    textDecoration: "none",
+                    border: "1px solid rgba(15,23,42,.08)",
+                  }}
+                >
+                  {PHONE_1_LABEL}
+                </a>
+
+                <a
+                  href={`tel:${PHONE_2_RAW}`}
+                  style={{
+                    padding: "12px 14px",
+                    borderRadius: 14,
+                    background: "#fff",
+                    color: "#0b1220",
+                    fontWeight: 900,
+                    textDecoration: "none",
+                    border: "1px solid rgba(15,23,42,.08)",
+                  }}
+                >
+                  {PHONE_2_LABEL}
+                </a>
+              </div>
+            )}
+          </div>
 
           <button
             onClick={() => setOpen(true)}
@@ -160,9 +250,9 @@ export default function Navbar() {
           @media(max-width: 640px){
             .navCallText{ display:none; }
             .navCallBtn{
-              width: 44px !important;
+              min-width: 44px !important;
               height: 44px !important;
-              padding: 0 !important;
+              padding: 0 10px !important;
               justify-content: center !important;
               border-radius: 14px !important;
             }
@@ -318,9 +408,10 @@ export default function Navbar() {
                 <div style={{ fontWeight: 950, color: "#0b1220", letterSpacing: "-0.01em" }}>
                   Contatto rapido
                 </div>
+
                 <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                   <a
-                    href="tel:091406911"
+                    href={`tel:${PHONE_1_RAW}`}
                     onClick={close}
                     style={{
                       padding: "14px 14px",
@@ -335,7 +426,26 @@ export default function Navbar() {
                       gap: 10,
                     }}
                   >
-                    <PhoneCall size={18} /> Chiama adesso
+                    <PhoneCall size={18} /> Chiama {PHONE_1_LABEL}
+                  </a>
+
+                  <a
+                    href={`tel:${PHONE_2_RAW}`}
+                    onClick={close}
+                    style={{
+                      padding: "14px 14px",
+                      borderRadius: 16,
+                      background: "#0b1224",
+                      color: "white",
+                      fontWeight: 1000,
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 10,
+                    }}
+                  >
+                    <PhoneCall size={18} /> Chiama {PHONE_2_LABEL}
                   </a>
 
                   <a

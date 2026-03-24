@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Reveal from "./Reveal";
 import BrandsSection from "./BrandsSection";
-import { ShieldCheck, Clock, PhoneCall, ArrowRight } from "lucide-react";
+import { ShieldCheck, Clock, PhoneCall, ArrowRight, ChevronDown } from "lucide-react";
 
 export default function HeroSection() {
   const images = useMemo(
@@ -9,7 +9,13 @@ export default function HeroSection() {
     []
   );
 
+  const PHONE_1_RAW = "091406911";
+  const PHONE_2_RAW = "0916763328";
+  const PHONE_1_LABEL = "091 406911";
+  const PHONE_2_LABEL = "091 6763328";
+
   const [idx, setIdx] = useState(0);
+  const [openPhoneChoice, setOpenPhoneChoice] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -17,6 +23,14 @@ export default function HeroSection() {
     }, 5000);
     return () => clearInterval(t);
   }, [images.length]);
+
+  useEffect(() => {
+    const handleClickOutside = () => setOpenPhoneChoice(false);
+    if (openPhoneChoice) {
+      window.addEventListener("click", handleClickOutside);
+    }
+    return () => window.removeEventListener("click", handleClickOutside);
+  }, [openPhoneChoice]);
 
   return (
     <section
@@ -120,25 +134,91 @@ export default function HeroSection() {
 
         <Reveal>
           <div className="hero-cta-row" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <a
-              className="btnAnim hero-cta-btn"
-              href="tel:091406911"
-              style={{
-                padding: "14px 18px",
-                borderRadius: 16,
-                background: "#e53935",
-                color: "white",
-                fontWeight: 950,
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-              }}
+            <div
+              style={{ position: "relative" }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <PhoneCall size={18} />
-              Chiama ora
-            </a>
+              <button
+                type="button"
+                className="btnAnim hero-cta-btn"
+                onClick={() => setOpenPhoneChoice((prev) => !prev)}
+                style={{
+                  padding: "14px 18px",
+                  borderRadius: 16,
+                  background: "#e53935",
+                  color: "white",
+                  fontWeight: 950,
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <PhoneCall size={18} />
+                Chiama ora
+                <ChevronDown
+                  size={16}
+                  style={{
+                    transform: openPhoneChoice ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform .18s ease",
+                  }}
+                />
+              </button>
+
+              {openPhoneChoice && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 10px)",
+                    left: 0,
+                    minWidth: 240,
+                    background: "rgba(255,255,255,.98)",
+                    border: "1px solid rgba(15,23,42,.10)",
+                    borderRadius: 18,
+                    boxShadow: "0 20px 50px rgba(15,23,42,.16)",
+                    padding: 10,
+                    display: "grid",
+                    gap: 8,
+                    zIndex: 30,
+                  }}
+                >
+                  <a
+                    href={`tel:${PHONE_1_RAW}`}
+                    style={{
+                      padding: "12px 14px",
+                      borderRadius: 14,
+                      background: "#fff",
+                      color: "#0b1220",
+                      fontWeight: 900,
+                      textDecoration: "none",
+                      border: "1px solid rgba(15,23,42,.08)",
+                      textAlign: "center",
+                    }}
+                  >
+                    {PHONE_1_LABEL}
+                  </a>
+
+                  <a
+                    href={`tel:${PHONE_2_RAW}`}
+                    style={{
+                      padding: "12px 14px",
+                      borderRadius: 14,
+                      background: "#fff",
+                      color: "#0b1220",
+                      fontWeight: 900,
+                      textDecoration: "none",
+                      border: "1px solid rgba(15,23,42,.08)",
+                      textAlign: "center",
+                    }}
+                  >
+                    {PHONE_2_LABEL}
+                  </a>
+                </div>
+              )}
+            </div>
 
             <a
               className="btnAnim hero-cta-btn"

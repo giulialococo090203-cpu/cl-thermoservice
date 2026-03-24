@@ -60,7 +60,9 @@ export default function Footer() {
           <br />
           Via Tommaso Calojra 36, Palermo
           <br />
-          Email: clthermoservice@virgilio.it – Tel: 091406911
+          Email: clthermoservice@virgilio.it
+          <br />
+          Tel: 091406911 – 0916763328
         </div>
 
         <div

@@ -78,7 +78,6 @@ export default function AdminCertifications() {
     background: "#fff",
     width: "100%",
     boxSizing: "border-box",
-    minWidth: 0,
   };
 
   const btn = (variant = "dark") => {
@@ -277,13 +276,6 @@ export default function AdminCertifications() {
           overflow: hidden;
         }
 
-        .adminCertCardRowTop {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) 220px 140px;
-          gap: 10px;
-          align-items: center;
-        }
-
         @media (max-width: 900px) {
           .adminCertRoot {
             padding: 16px !important;
@@ -309,14 +301,6 @@ export default function AdminCertifications() {
 
           .adminCertSectionHead > * {
             width: 100%;
-          }
-
-          .adminCertCardRowTop {
-            grid-template-columns: 1fr !important;
-          }
-
-          .adminCertCardRowTop > * {
-            width: 100% !important;
           }
         }
 
@@ -451,7 +435,7 @@ export default function AdminCertifications() {
             <div className="adminCertCardsGrid">
               {cards.map((card, idx) => (
                 <div key={idx} className="adminCertCardBox">
-                  <div className="adminCertCardRowTop">
+                  <div style={{ display: "grid", gap: 10 }}>
                     <input
                       style={inputStyle}
                       value={card.title || ""}
@@ -472,7 +456,7 @@ export default function AdminCertifications() {
                     </select>
 
                     <button
-                      style={btn("danger")}
+                      style={{ ...btn("danger"), width: "100%" }}
                       type="button"
                       onClick={() => removeCard(idx)}
                       disabled={saving}
