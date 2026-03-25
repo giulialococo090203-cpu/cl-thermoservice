@@ -5,44 +5,26 @@ const TABLE = "coverage_content";
 const COMPANY_ID = "21cb4d5d-9566-4488-802c-a6b28488e486";
 
 const DEFAULT_COVERAGE = {
-  kicker: "ZONA DI COPERTURA",
-  title: "Interventi rapidi a Palermo e provincia",
+  kicker: "ZONA COPERTURA",
+  title: "Operiamo a Palermo e provincia",
   lead:
-    "Operiamo con tecnici qualificati e disponibilità per urgenze. Ti diciamo subito tempi e costi.",
-  cards: [
-    {
-      icon: "MapPin",
-      title: "Copertura",
-      description:
-        "Palermo città e principali zone della provincia. Interventi a domicilio su appuntamento.",
-    },
-    {
-      icon: "Clock",
-      title: "Orari",
-      description:
-        "Lun–Ven 8:00–18:00 · Sab 8:00–13:00. Per urgenze, contattaci: valuteremo la priorità.",
-    },
-    {
-      icon: "Zap",
-      title: "Urgenze",
-      description:
-        "Se la caldaia è ferma o perde acqua, chiama subito: riduciamo i tempi con diagnosi rapida.",
-    },
-    {
-      icon: "CheckCircle2",
-      title: "Preventivo chiaro",
-      description:
-        "Prima dell’intervento ti spieghiamo la soluzione e i costi. Trasparenza e garanzia lavori.",
-    },
-  ],
-};
+    "Interveniamo su appuntamento in diverse aree del territorio, con organizzazione chiara.",
 
-const ICON_OPTIONS = [
-  { key: "MapPin", label: "Mappa" },
-  { key: "Clock", label: "Orologio" },
-  { key: "Zap", label: "Fulmine" },
-  { key: "CheckCircle2", label: "Check" },
-];
+  areas: [
+    "Palermo",
+    "Bagheria",
+    "Monreale",
+    "Villabate",
+    "Misilmeri",
+    "Carini",
+    "Capaci",
+    "Isola delle Femmine",
+  ],
+
+  extra_text: "Se la tua zona non è nell’elenco, contattaci comunque.",
+
+  cards: [],
+};
 
 export default function AdminCoverage() {
   const [coverage, setCoverage] = useState(DEFAULT_COVERAGE);
@@ -53,6 +35,11 @@ export default function AdminCoverage() {
   const [err, setErr] = useState("");
 
   const lastSavedRef = useRef(JSON.stringify(DEFAULT_COVERAGE));
+
+  const areas = useMemo(
+    () => (Array.isArray(coverage.areas) ? coverage.areas : []),
+    [coverage.areas]
+  );
 
   const cards = useMemo(
     () => (Array.isArray(coverage.cards) ? coverage.cards : []),
@@ -91,6 +78,7 @@ export default function AdminCoverage() {
       whiteSpace: "nowrap",
       minWidth: 0,
     };
+
     if (variant === "dark") {
       return {
         ...base,
@@ -99,9 +87,11 @@ export default function AdminCoverage() {
         border: "1px solid #0b1224",
       };
     }
+
     if (variant === "ghost") {
       return { ...base, background: "#fff", color: "#0b1224" };
     }
+
     if (variant === "soft") {
       return {
         ...base,
@@ -110,6 +100,7 @@ export default function AdminCoverage() {
         border: "1px solid rgba(99,102,241,.25)",
       };
     }
+
     if (variant === "danger") {
       return {
         ...base,
@@ -118,7 +109,61 @@ export default function AdminCoverage() {
         border: "1px solid #fecaca",
       };
     }
+
     return base;
+  };
+
+  const markUnsaved = (next) => {
+    setCoverage(next);
+    setUnsaved(JSON.stringify(next) !== lastSavedRef.current);
+  };
+
+  const setField = (key, value) => {
+    markUnsaved({ ...coverage, [key]: value });
+  };
+
+  const updateArea = (idx, value) => {
+    const next = areas.map((item, i) => (i === idx ? value : item));
+    markUnsaved({ ...coverage, areas: next });
+  };
+
+  const addArea = () => {
+    markUnsaved({
+      ...coverage,
+      areas: [...areas, "Nuova zona"],
+    });
+  };
+
+  const removeArea = (idx) => {
+    markUnsaved({
+      ...coverage,
+      areas: areas.filter((_, i) => i !== idx),
+    });
+  };
+
+  const updateCard = (idx, patch) => {
+    const next = cards.map((item, i) => (i === idx ? { ...item, ...patch } : item));
+    markUnsaved({ ...coverage, cards: next });
+  };
+
+  const addCard = () => {
+    markUnsaved({
+      ...coverage,
+      cards: [
+        ...cards,
+        {
+          title: "Nuova card",
+          description: "Nuova descrizione",
+        },
+      ],
+    });
+  };
+
+  const removeCard = (idx) => {
+    markUnsaved({
+      ...coverage,
+      cards: cards.filter((_, i) => i !== idx),
+    });
   };
 
   const load = async () => {
@@ -145,8 +190,12 @@ export default function AdminCoverage() {
 
       const safeMerged = {
         ...merged,
+        areas:
+          Array.isArray(merged.areas) && merged.areas.length
+            ? merged.areas
+            : DEFAULT_COVERAGE.areas,
         cards:
-          Array.isArray(merged.cards) && merged.cards.length
+          Array.isArray(merged.cards)
             ? merged.cards
             : DEFAULT_COVERAGE.cards,
       };
@@ -164,41 +213,6 @@ export default function AdminCoverage() {
   useEffect(() => {
     load();
   }, []);
-
-  const markUnsaved = (next) => {
-    setCoverage(next);
-    setUnsaved(JSON.stringify(next) !== lastSavedRef.current);
-  };
-
-  const setField = (key, value) => {
-    markUnsaved({ ...coverage, [key]: value });
-  };
-
-  const updateCard = (idx, patch) => {
-    const nextCards = cards.map((c, i) => (i === idx ? { ...c, ...patch } : c));
-    markUnsaved({ ...coverage, cards: nextCards });
-  };
-
-  const addCard = () => {
-    markUnsaved({
-      ...coverage,
-      cards: [
-        ...cards,
-        {
-          icon: "MapPin",
-          title: "Nuova card",
-          description: "Nuova descrizione",
-        },
-      ],
-    });
-  };
-
-  const removeCard = (idx) => {
-    markUnsaved({
-      ...coverage,
-      cards: cards.filter((_, i) => i !== idx),
-    });
-  };
 
   const save = async () => {
     setErr("");
@@ -263,13 +277,13 @@ export default function AdminCoverage() {
           align-items: center;
         }
 
-        .adminCoverageCardsGrid {
+        .adminCoverageList {
           margin-top: 12px;
           display: grid;
           gap: 12px;
         }
 
-        .adminCoverageCardBox {
+        .adminCoverageItemBox {
           background: #fff;
           border: 1px solid rgba(15,23,42,0.10);
           border-radius: 18px;
@@ -279,11 +293,16 @@ export default function AdminCoverage() {
           overflow: hidden;
         }
 
-        .adminCoverageCardRowTop {
+        .adminCoverageAreaRow {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) 220px 140px;
+          grid-template-columns: minmax(0, 1fr) 140px;
           gap: 10px;
           align-items: center;
+        }
+
+        .adminCoverageCardRow {
+          display: grid;
+          gap: 10px;
         }
 
         @media (max-width: 900px) {
@@ -313,11 +332,11 @@ export default function AdminCoverage() {
             width: 100%;
           }
 
-          .adminCoverageCardRowTop {
+          .adminCoverageAreaRow {
             grid-template-columns: 1fr !important;
           }
 
-          .adminCoverageCardRowTop > * {
+          .adminCoverageAreaRow > * {
             width: 100% !important;
           }
         }
@@ -335,7 +354,7 @@ export default function AdminCoverage() {
             Sezione “Zona di copertura”
           </div>
           <div style={{ marginTop: 6, color: "#475569", fontWeight: 800 }}>
-            Modifica i testi pubblici della sezione copertura.
+            Gestisci titolo, testo, zone, testo extra e card.
           </div>
         </div>
 
@@ -419,17 +438,19 @@ export default function AdminCoverage() {
                 onChange={(e) => setField("kicker", e.target.value)}
                 placeholder="Kicker"
               />
+
               <input
                 style={inputStyle}
                 value={coverage.title || ""}
                 onChange={(e) => setField("title", e.target.value)}
                 placeholder="Titolo"
               />
+
               <textarea
                 style={{ ...inputStyle, minHeight: 90, resize: "vertical", fontWeight: 750 }}
                 value={coverage.lead || ""}
                 onChange={(e) => setField("lead", e.target.value)}
-                placeholder="Sottotitolo / descrizione"
+                placeholder="Testo introduttivo"
               />
             </div>
           </div>
@@ -444,16 +465,66 @@ export default function AdminCoverage() {
             }}
           >
             <div className="adminCoverageSectionHead">
-              <div style={{ fontWeight: 950, color: "#0b1224" }}>Card sezione</div>
+              <div style={{ fontWeight: 950, color: "#0b1224" }}>Zone servite</div>
+              <button style={btn("soft")} type="button" onClick={addArea} disabled={saving}>
+                + Aggiungi zona
+              </button>
+            </div>
+
+            <div className="adminCoverageList">
+              {areas.map((area, idx) => (
+                <div key={idx} className="adminCoverageItemBox">
+                  <div className="adminCoverageAreaRow">
+                    <input
+                      style={inputStyle}
+                      value={area || ""}
+                      onChange={(e) => updateArea(idx, e.target.value)}
+                      placeholder="Nome zona"
+                    />
+
+                    <button
+                      style={btn("danger")}
+                      type="button"
+                      onClick={() => removeArea(idx)}
+                      disabled={saving}
+                    >
+                      Elimina
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+              <textarea
+                style={{ ...inputStyle, minHeight: 80, resize: "vertical", fontWeight: 750 }}
+                value={coverage.extra_text || ""}
+                onChange={(e) => setField("extra_text", e.target.value)}
+                placeholder="Casella di testo facoltativa"
+              />
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              background: "rgba(255,255,255,.9)",
+              border: "1px solid rgba(15,23,42,0.10)",
+              borderRadius: 22,
+              padding: 16,
+            }}
+          >
+            <div className="adminCoverageSectionHead">
+              <div style={{ fontWeight: 950, color: "#0b1224" }}>Card informative</div>
               <button style={btn("soft")} type="button" onClick={addCard} disabled={saving}>
                 + Aggiungi card
               </button>
             </div>
 
-            <div className="adminCoverageCardsGrid">
+            <div className="adminCoverageList">
               {cards.map((card, idx) => (
-                <div key={idx} className="adminCoverageCardBox">
-                  <div className="adminCoverageCardRowTop">
+                <div key={idx} className="adminCoverageItemBox">
+                  <div className="adminCoverageCardRow">
                     <input
                       style={inputStyle}
                       value={card.title || ""}
@@ -461,17 +532,12 @@ export default function AdminCoverage() {
                       placeholder="Titolo card"
                     />
 
-                    <select
-                      style={inputStyle}
-                      value={card.icon || "MapPin"}
-                      onChange={(e) => updateCard(idx, { icon: e.target.value })}
-                    >
-                      {ICON_OPTIONS.map((o) => (
-                        <option key={o.key} value={o.key}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
+                    <textarea
+                      style={{ ...inputStyle, minHeight: 90, resize: "vertical", fontWeight: 750 }}
+                      value={card.description || ""}
+                      onChange={(e) => updateCard(idx, { description: e.target.value })}
+                      placeholder="Descrizione card"
+                    />
 
                     <button
                       style={btn("danger")}
@@ -482,18 +548,6 @@ export default function AdminCoverage() {
                       Elimina
                     </button>
                   </div>
-
-                  <textarea
-                    style={{
-                      ...inputStyle,
-                      minHeight: 90,
-                      resize: "vertical",
-                      fontWeight: 750,
-                    }}
-                    value={card.description || ""}
-                    onChange={(e) => updateCard(idx, { description: e.target.value })}
-                    placeholder="Descrizione card"
-                  />
                 </div>
               ))}
             </div>

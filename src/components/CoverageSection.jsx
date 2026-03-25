@@ -1,8 +1,17 @@
+import { useEffect, useState } from "react";
 import Reveal from "./Reveal";
-import { MapPin, Clock3, ShieldCheck, Wrench, PhoneCall } from "lucide-react";
+import { MapPin, PhoneCall } from "lucide-react";
+import { supabase } from "../supabaseClient";
 
-export default function CoverageSection() {
-  const areas = [
+const COMPANY_ID = "21cb4d5d-9566-4488-802c-a6b28488e486";
+
+const DEFAULT = {
+  kicker: "ZONA COPERTURA",
+  title: "Operiamo a Palermo e provincia",
+  lead:
+    "Interveniamo su appuntamento in diverse aree del territorio, con organizzazione chiara.",
+
+  areas: [
     "Palermo",
     "Bagheria",
     "Monreale",
@@ -11,30 +20,47 @@ export default function CoverageSection() {
     "Carini",
     "Capaci",
     "Isola delle Femmine",
-  ];
+  ],
 
-  const highlights = [
-    {
-      icon: <MapPin size={22} />,
-      title: "Copertura sul territorio",
-      text: "Operiamo a Palermo e in diverse zone limitrofe con interventi programmati e assistenza rapida.",
-    },
-    {
-      icon: <Clock3 size={22} />,
-      title: "Tempi rapidi",
-      text: "Organizziamo gli appuntamenti in modo puntuale, cercando di ridurre attese e tempi morti.",
-    },
-    {
-      icon: <ShieldCheck size={22} />,
-      title: "Interventi affidabili",
-      text: "Ogni uscita viene gestita con attenzione alla sicurezza, alla diagnosi e alla verifica finale.",
-    },
-    {
-      icon: <Wrench size={22} />,
-      title: "Supporto tecnico",
-      text: "Assistenza su impianti termici, caldaie, manutenzione ordinaria e richieste di verifica.",
-    },
-  ];
+  extra_text: "Se la tua zona non è nell’elenco, contattaci comunque.",
+
+  cards: [],
+};
+
+export default function CoverageSection() {
+  const [data, setData] = useState(DEFAULT);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+
+    const { data: res, error } = await supabase
+      .from("coverage_content")
+      .select("payload")
+      .eq("company_id", COMPANY_ID)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!error && res?.payload) {
+      setData({
+        ...DEFAULT,
+        ...res.payload,
+        areas: Array.isArray(res.payload.areas) ? res.payload.areas : DEFAULT.areas,
+        cards: Array.isArray(res.payload.cards) ? res.payload.cards : DEFAULT.cards,
+      });
+    } else {
+      setData(DEFAULT);
+    }
+
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  if (loading) return null;
 
   return (
     <section id="zona" className="section">
@@ -51,13 +77,12 @@ export default function CoverageSection() {
         >
           <Reveal>
             <div style={{ maxWidth: 980, margin: "0 auto", textAlign: "center" }}>
-              <div className="kicker">ZONA COPERTURA</div>
+              <div className="kicker">{data.kicker}</div>
               <h2 className="h2" style={{ marginBottom: 10 }}>
-                Operiamo a Palermo e provincia
+                {data.title}
               </h2>
               <p className="lead" style={{ marginTop: 0 }}>
-                Interveniamo su appuntamento in diverse aree del territorio, con organizzazione chiara,
-                puntualità e supporto tecnico qualificato.
+                {data.lead}
               </p>
             </div>
           </Reveal>
@@ -103,9 +128,9 @@ export default function CoverageSection() {
                     gap: 10,
                   }}
                 >
-                  {areas.map((area) => (
+                  {data.areas.map((area, i) => (
                     <div
-                      key={area}
+                      key={`${area}-${i}`}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -146,17 +171,18 @@ export default function CoverageSection() {
                   ))}
                 </div>
 
-                <div
-                  style={{
-                    marginTop: 16,
-                    color: "rgba(15,23,42,.70)",
-                    fontWeight: 650,
-                    lineHeight: 1.7,
-                  }}
-                >
-                  Se la tua zona non è nell’elenco, contattaci comunque: valutiamo disponibilità e tempi
-                  in base al tipo di intervento richiesto.
-                </div>
+                {data.extra_text ? (
+                  <div
+                    style={{
+                      marginTop: 16,
+                      color: "rgba(15,23,42,.70)",
+                      fontWeight: 650,
+                      lineHeight: 1.7,
+                    }}
+                  >
+                    {data.extra_text}
+                  </div>
+                ) : null}
               </div>
             </Reveal>
 
@@ -178,67 +204,69 @@ export default function CoverageSection() {
                   Come lavoriamo sul territorio
                 </div>
 
-                <div
-                  className="coverageHighlightsGrid"
-                  style={{
-                    marginTop: 16,
-                    display: "grid",
-                    gap: 12,
-                  }}
-                >
-                  {highlights.map((item) => (
-                    <div
-                      key={item.title}
-                      style={{
-                        borderRadius: 20,
-                        border: "1px solid rgba(255,255,255,0.14)",
-                        background: "rgba(255,255,255,0.08)",
-                        padding: 16,
-                        display: "flex",
-                        gap: 12,
-                        alignItems: "flex-start",
-                      }}
-                    >
+                {data.cards?.length > 0 ? (
+                  <div
+                    className="coverageHighlightsGrid"
+                    style={{
+                      marginTop: 16,
+                      display: "grid",
+                      gap: 12,
+                    }}
+                  >
+                    {data.cards.map((item, i) => (
                       <div
+                        key={`${item.title}-${i}`}
                         style={{
-                          width: 46,
-                          height: 46,
-                          borderRadius: 16,
-                          display: "grid",
-                          placeItems: "center",
-                          background: "rgba(255,255,255,0.10)",
+                          borderRadius: 20,
                           border: "1px solid rgba(255,255,255,0.14)",
-                          flex: "0 0 auto",
+                          background: "rgba(255,255,255,0.08)",
+                          padding: 16,
+                          display: "flex",
+                          gap: 12,
+                          alignItems: "flex-start",
                         }}
                       >
-                        {item.icon}
-                      </div>
+                        <div
+                          style={{
+                            width: 46,
+                            height: 46,
+                            borderRadius: 16,
+                            display: "grid",
+                            placeItems: "center",
+                            background: "rgba(255,255,255,0.10)",
+                            border: "1px solid rgba(255,255,255,0.14)",
+                            flex: "0 0 auto",
+                          }}
+                        >
+                          <MapPin size={22} />
+                        </div>
 
-                      <div style={{ minWidth: 0 }}>
-                        <div
-                          style={{
-                            fontWeight: 900,
-                            fontSize: 18,
-                            letterSpacing: "-0.01em",
-                            lineHeight: 1.2,
-                          }}
-                        >
-                          {item.title}
-                        </div>
-                        <div
-                          style={{
-                            marginTop: 6,
-                            opacity: 0.9,
-                            fontWeight: 650,
-                            lineHeight: 1.55,
-                          }}
-                        >
-                          {item.text}
+                        <div style={{ minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontWeight: 900,
+                              fontSize: 18,
+                              letterSpacing: "-0.01em",
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {item.title}
+                          </div>
+                          <div
+                            style={{
+                              marginTop: 6,
+                              opacity: 0.9,
+                              fontWeight: 650,
+                              lineHeight: 1.55,
+                            }}
+                          >
+                            {item.description}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : null}
 
                 <a
                   href="tel:091406911"
@@ -259,7 +287,7 @@ export default function CoverageSection() {
                   }}
                 >
                   <PhoneCall size={18} />
-                  Verifica disponibilità
+                  Contattaci
                 </a>
               </div>
             </Reveal>
