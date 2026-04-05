@@ -5,6 +5,7 @@ export { buildRequestsPdfBlob } from "./requestsPdf";
 // se ti serve altrove
 export const fmtDateTime = (iso) => {
   if (!iso) return "-";
+
   try {
     const d = new Date(iso);
     return d.toLocaleString("it-IT", {
@@ -17,4 +18,15 @@ export const fmtDateTime = (iso) => {
   } catch {
     return String(iso);
   }
+};
+
+export const fmtEuro = (value) => {
+  const num = Number(value ?? 0);
+
+  if (!Number.isFinite(num)) return "0,00";
+
+  return num.toLocaleString("it-IT", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 };

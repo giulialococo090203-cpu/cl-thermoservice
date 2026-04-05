@@ -80,6 +80,58 @@ export default function DatorePanel() {
   const containerRef = useRef(null);
   const filesSectionRef = useRef(null);
 
+  const isMobileBrowser = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+
+  const openBlobPdfMobileSafe = (blob, fileName = "preventivo.pdf") => {
+    const url = URL.createObjectURL(blob);
+    const mobile = isMobileBrowser();
+
+    if (mobile) {
+      const newTab = window.open(url, "_blank");
+      if (!newTab) {
+        window.location.href = url;
+      }
+    } else {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  };
+
+  const openUrlPdfMobileSafe = async (signedUrl, fallbackFileName = "preventivo.pdf") => {
+    if (!signedUrl) throw new Error("Signed URL non disponibile.");
+
+    const mobile = isMobileBrowser();
+
+    if (mobile) {
+      const newTab = window.open(signedUrl, "_blank");
+      if (!newTab) {
+        window.location.href = signedUrl;
+      }
+      return;
+    }
+
+    const res = await fetch(signedUrl, { cache: "no-store" });
+    if (!res.ok) throw new Error(`Download fallito (${res.status}).`);
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fallbackFileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  };
+
   const cardStyle = {
     background: "rgba(255,255,255,0.85)",
     borderRadius: 28,
@@ -417,14 +469,7 @@ export default function DatorePanel() {
 
   const handleDownloadRequestsPdf = () => {
     const blob = buildRequestsPdfBlob(requests, `${company?.name || "Azienda"} — Richieste preventivo`);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "richieste-clienti.pdf";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    openBlobPdfMobileSafe(blob, "richieste-clienti.pdf");
   };
 
   const openSavedPdf = async (storagePath, openedTab) => {
@@ -456,26 +501,8 @@ export default function DatorePanel() {
 
   const downloadSavedPdf = async (storagePath) => {
     const signedUrl = await createSignedUrl(storagePath, 300);
-
-    if (!signedUrl) {
-      throw new Error("Signed URL non disponibile (controlla createSignedUrl in datoreApi).");
-    }
-
-    const res = await fetch(signedUrl, { cache: "no-store" });
-    if (!res.ok) throw new Error(`Download fallito (${res.status}).`);
-
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
     const fileName = storagePath.split("/").pop() || "preventivo.pdf";
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    await openUrlPdfMobileSafe(signedUrl, fileName);
   };
 
   const downloadSelectedPdfs = async () => {
@@ -600,6 +627,8 @@ export default function DatorePanel() {
         totals: safeTotals,
         selectedClauses: safeClauseLabels,
       });
+
+      openBlobPdfMobileSafe(pdfBlob, "preventivo.pdf");
 
       const { storagePath } = await uploadPdfToStorage({
         companyId,

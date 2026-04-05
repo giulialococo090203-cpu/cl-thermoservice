@@ -1,3 +1,4 @@
+// src/components/datore/pdf/requestsPdf.js
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { fmtDateTime } from "../utils/date";
@@ -6,9 +7,11 @@ export function buildRequestsPdfBlob(requests, title = "Richieste preventivo") {
   const doc = new jsPDF({ orientation: "landscape" });
 
   doc.setFontSize(14);
-  doc.text("Richieste preventivo (clienti)", 14, 14);
+  doc.text(title || "Richieste preventivo (clienti)", 14, 14);
 
-  const body = (rows || []).map((q) => [
+  const rows = Array.isArray(requests) ? requests : [];
+
+  const body = rows.map((q) => [
     fmtDateTime(q.created_at),
     q.nome || "",
     q.cognome || "",
@@ -25,5 +28,6 @@ export function buildRequestsPdfBlob(requests, title = "Richieste preventivo") {
     headStyles: { fillColor: [11, 18, 36] },
   });
 
-  doc.save("richieste-clienti.pdf");
+  // 🔥 FIX: restituisce blob invece di fare save diretto
+  return doc.output("blob");
 }
