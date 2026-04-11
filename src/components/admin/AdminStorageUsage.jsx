@@ -2,9 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { supabaseAdmin } from "../../supabaseAdminClient";
 
 const BUCKET_ID = "quote_files";
-
-// Imposta qui il limite che vuoi monitorare.
-// Esempio: 1 = 1 GB, 2 = 2 GB, 5 = 5 GB.
 const CONFIGURED_LIMIT_GB = 1;
 
 function formatBytes(bytes) {
@@ -16,14 +13,13 @@ function formatBytes(bytes) {
   return `${(value / (1024 * 1024 * 1024)).toFixed(3)} GB`;
 }
 
-function getObjectSize(row) {
-  const meta = row?.metadata || {};
+function getFileSize(row) {
   const candidates = [
-    meta.size,
-    meta.fileSize,
-    meta.file_size,
-    meta.contentLength,
-    meta.content_length,
+    row?.metadata?.size,
+    row?.metadata?.fileSize,
+    row?.metadata?.file_size,
+    row?.metadata?.contentLength,
+    row?.metadata?.content_length,
   ];
 
   for (const c of candidates) {
@@ -34,13 +30,61 @@ function getObjectSize(row) {
   return 0;
 }
 
+function getCreatedAt(row) {
+  return row?.created_at || row?.updated_at || null;
+}
+
+async function listAllFilesRecursive(bucket, path = "") {
+  const collected = [];
+  let offset = 0;
+  const pageSize = 100;
+
+  while (true) {
+    const { data, error } = await supabaseAdmin.storage.from(bucket).list(path, {
+      limit: pageSize,
+      offset,
+      sortBy: { column: "name", order: "asc" },
+    });
+
+    if (error) throw error;
+
+    const rows = Array.isArray(data) ? data : [];
+    if (!rows.length) break;
+
+    for (const row of rows) {
+      const name = String(row?.name || "");
+      if (!name) continue;
+
+      const fullPath = path ? `${path}/${name}` : name;
+
+      // cartella
+      if (!row?.id) {
+        const nested = await listAllFilesRecursive(bucket, fullPath);
+        collected.push(...nested);
+        continue;
+      }
+
+      // file
+      collected.push({
+        ...row,
+        fullPath,
+      });
+    }
+
+    if (rows.length < pageSize) break;
+    offset += pageSize;
+  }
+
+  return collected;
+}
+
 function groupByCompanyPrefix(rows) {
   const map = new Map();
 
   for (const row of rows) {
-    const name = String(row?.name || "");
-    const topFolder = name.split("/")[0] || "senza-cartella";
-    const size = getObjectSize(row);
+    const fullPath = String(row?.fullPath || row?.name || "");
+    const topFolder = fullPath.split("/")[0] || "senza-cartella";
+    const size = getFileSize(row);
 
     if (!map.has(topFolder)) {
       map.set(topFolder, {
@@ -100,15 +144,6 @@ export default function AdminStorageUsage() {
       };
     }
 
-    if (variant === "soft") {
-      return {
-        ...base,
-        background: "#eef2ff",
-        color: "#111827",
-        border: "1px solid rgba(99,102,241,.25)",
-      };
-    }
-
     return base;
   };
 
@@ -117,22 +152,11 @@ export default function AdminStorageUsage() {
     setErr("");
 
     try {
-      const { data, error } = await supabaseAdmin
-        .schema("storage")
-        .from("objects")
-        .select("id, name, created_at, metadata, bucket_id")
-        .eq("bucket_id", BUCKET_ID)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
+      const data = await listAllFilesRecursive(BUCKET_ID, "");
       setRows(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
-      setErr(
-        e?.message ||
-          "Errore caricamento utilizzo storage. Se vedi un errore permessi sulla tabella storage.objects, poi ti do anche la policy corretta."
-      );
+      setErr(e?.message || "Errore caricamento utilizzo storage.");
       setRows([]);
     } finally {
       setLoading(false);
@@ -144,18 +168,16 @@ export default function AdminStorageUsage() {
   }, []);
 
   const stats = useMemo(() => {
-    const totalBytes = rows.reduce((sum, row) => sum + getObjectSize(row), 0);
+    const totalBytes = rows.reduce((sum, row) => sum + getFileSize(row), 0);
     const totalFiles = rows.length;
     const limitBytes = CONFIGURED_LIMIT_GB * 1024 * 1024 * 1024;
     const pct = limitBytes > 0 ? Math.min((totalBytes / limitBytes) * 100, 100) : 0;
     const remainingBytes = Math.max(limitBytes - totalBytes, 0);
 
-    const latestDate = rows.length
-      ? rows
-          .map((r) => r?.created_at)
-          .filter(Boolean)
-          .sort((a, b) => new Date(b) - new Date(a))[0]
-      : null;
+    const dates = rows
+      .map((r) => getCreatedAt(r))
+      .filter(Boolean)
+      .sort((a, b) => new Date(b) - new Date(a));
 
     return {
       totalBytes,
@@ -163,7 +185,7 @@ export default function AdminStorageUsage() {
       limitBytes,
       pct,
       remainingBytes,
-      latestDate,
+      latestDate: dates[0] || null,
       byCompany: groupByCompanyPrefix(rows),
     };
   }, [rows]);
