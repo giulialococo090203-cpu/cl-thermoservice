@@ -62,9 +62,9 @@ async function listRecursive(bucket, path = "") {
       if (!name) continue;
 
       const fullPath = joinPath(path, name);
-      const isFolder = !row?.id;
 
-      if (isFolder) {
+      // cartella
+      if (!row?.id) {
         const nested = await listRecursive(bucket, fullPath);
         all = all.concat(nested);
       } else {
@@ -83,21 +83,15 @@ async function listRecursive(bucket, path = "") {
   return all;
 }
 
-function groupByTopFolder(rows) {
+function groupByBucket(rows) {
   const map = new Map();
 
   for (const row of rows) {
-    const fullPath = String(row?.fullPath || row?.name || "");
-    const firstChunk = fullPath.split("/")[0] || "root";
-    const key = `${row.bucket} / ${firstChunk}`;
+    const key = row.bucket;
     const size = getFileSize(row);
 
     if (!map.has(key)) {
-      map.set(key, {
-        key,
-        files: 0,
-        bytes: 0,
-      });
+      map.set(key, { key, files: 0, bytes: 0 });
     }
 
     const curr = map.get(key);
@@ -108,19 +102,17 @@ function groupByTopFolder(rows) {
   return Array.from(map.values()).sort((a, b) => b.bytes - a.bytes);
 }
 
-function groupByBucket(rows) {
+function groupByTopFolder(rows) {
   const map = new Map();
 
   for (const row of rows) {
-    const key = row.bucket;
+    const fullPath = String(row?.fullPath || row?.name || "");
+    const firstChunk = fullPath.split("/")[0] || "root";
+    const key = `${row.bucket} / ${firstChunk}`;
     const size = getFileSize(row);
 
     if (!map.has(key)) {
-      map.set(key, {
-        key,
-        files: 0,
-        bytes: 0,
-      });
+      map.set(key, { key, files: 0, bytes: 0 });
     }
 
     const curr = map.get(key);
@@ -227,6 +219,14 @@ export default function AdminStorageUsage() {
     };
   }, []);
 
+  const sortedRows = useMemo(() => {
+    return [...rows].sort((a, b) => {
+      const da = new Date(getCreatedAt(a) || 0).getTime();
+      const db = new Date(getCreatedAt(b) || 0).getTime();
+      return db - da;
+    });
+  }, [rows]);
+
   const stats = useMemo(() => {
     const totalBytes = rows.reduce((sum, row) => sum + getFileSize(row), 0);
     const totalFiles = rows.length;
@@ -324,12 +324,24 @@ export default function AdminStorageUsage() {
           padding: 12px 14px;
         }
 
+        .adminStorageFileRow {
+          display: grid;
+          grid-template-columns: 150px 1fr 140px 170px;
+          gap: 10px;
+          align-items: center;
+          background: #fff;
+          border: 1px solid rgba(15,23,42,0.10);
+          border-radius: 18px;
+          padding: 12px 14px;
+        }
+
         @media (max-width: 980px) {
           .adminStorageGrid {
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
 
-          .adminStorageRow {
+          .adminStorageRow,
+          .adminStorageFileRow {
             grid-template-columns: 1fr !important;
           }
         }
@@ -530,6 +542,46 @@ export default function AdminStorageUsage() {
 
               <div style={{ fontWeight: 950, color: "#0b1224" }}>
                 {formatBytes(item.bytes)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="adminStorageSectionTitle">File rilevati</div>
+
+      {sortedRows.length === 0 ? (
+        <div style={{ marginTop: 10, color: "#64748b", fontWeight: 800 }}>
+          Nessun file rilevato.
+        </div>
+      ) : (
+        <div className="adminStorageTable">
+          {sortedRows.map((row) => (
+            <div key={`${row.bucket}-${row.fullPath}`} className="adminStorageFileRow">
+              <div style={{ fontWeight: 900, color: "#334155" }}>
+                {row.bucket}
+              </div>
+
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 900, color: "#0b1224", wordBreak: "break-word" }}>
+                  {row.fullPath}
+                </div>
+              </div>
+
+              <div style={{ fontWeight: 900, color: "#0b1224" }}>
+                {formatBytes(getFileSize(row))}
+              </div>
+
+              <div style={{ color: "#475569", fontWeight: 800 }}>
+                {getCreatedAt(row)
+                  ? new Date(getCreatedAt(row)).toLocaleString("it-IT", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "-"}
               </div>
             </div>
           ))}
