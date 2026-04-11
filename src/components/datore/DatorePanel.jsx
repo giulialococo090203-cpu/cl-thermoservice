@@ -628,7 +628,20 @@ export default function DatorePanel() {
         selectedClauses: safeClauseLabels,
       });
 
-      openBlobPdfMobileSafe(pdfBlob, "preventivo.pdf");
+      // Desktop: scarica subito
+      // Mobile: non aprire automaticamente, solo salva nello storico
+      if (!isMobileBrowser()) {
+        const url = URL.createObjectURL(pdfBlob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "preventivo.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      }
 
       const { storagePath } = await uploadPdfToStorage({
         companyId,
@@ -642,7 +655,12 @@ export default function DatorePanel() {
         storage_path: storagePath,
       });
 
-      setCreateOk("✅ Preventivo creato e salvato. Lo trovi nello storico qui sotto (selezionato).");
+      setCreateOk(
+        isMobileBrowser()
+          ? "✅ Preventivo creato e salvato. Per aprirlo usa il doppio tap nello storico qui sotto."
+          : "✅ Preventivo creato e salvato. Lo trovi nello storico qui sotto (selezionato)."
+      );
+
       setLastCreatedStoragePath(storagePath);
       setSelectedPaths([storagePath]);
 
