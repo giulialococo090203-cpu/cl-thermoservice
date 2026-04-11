@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabaseAdmin } from "../../supabaseAdminClient";
 
 import AdminQuotes from "./AdminQuotes";
+import AdminStorageUsage from "./AdminStorageUsage";
 import AdminServices from "./AdminServices";
 import AdminAbout from "./AdminAbout";
 import AdminCoverage from "./AdminCoverage";
@@ -418,6 +419,7 @@ export default function AdminPanel() {
           <>
             {showQuotes && <AdminQuotes />}
 
+            <AdminStorageUsage />
             <AdminServices />
             <AdminAbout />
             <AdminCoverage />
