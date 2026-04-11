@@ -1,5 +1,7 @@
 // src/components/datore/DatorePanel.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 import { supabase } from "../../supabaseClient";
 
 import QuoteArchiveManager from "./QuoteArchiveManager";
@@ -518,10 +520,56 @@ export default function DatorePanel() {
     }
   };
 
+  const downloadSelectedPdfsZip = async () => {
+    if (!selectedPaths.length) return;
+
+    const selectedRows = files.filter((f) => selectedPaths.includes(f.storage_path));
+    if (!selectedRows.length) throw new Error("Nessun PDF selezionato.");
+
+    const zip = new JSZip();
+
+    for (const row of selectedRows) {
+      const signedUrl = await createSignedUrl(row.storage_path, 300);
+
+      if (!signedUrl) {
+        throw new Error(`Signed URL non disponibile per ${row.storage_path}`);
+      }
+
+      const res = await fetch(signedUrl, { cache: "no-store" });
+      if (!res.ok) {
+        throw new Error(`Download fallito (${res.status}) per ${row.storage_path}`);
+      }
+
+      const blob = await res.blob();
+      const fileName = row.storage_path.split("/").pop() || `preventivo-${row.id}.pdf`;
+      zip.file(fileName, blob);
+    }
+
+    const content = await zip.generateAsync({ type: "blob" });
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    saveAs(content, `preventivi-selezionati-${stamp}.zip`);
+  };
+
   const deleteSelectedPdfs = async () => {
     if (!selectedPaths.length) return;
 
-    const ok = window.confirm(`Eliminare ${selectedPaths.length} PDF selezionati?`);
+    const wantZip = window.confirm(
+      `Hai selezionato ${selectedPaths.length} PDF.\n\nPremi OK per scaricare prima uno ZIP di backup.\nPremi Annulla per saltare il download e passare direttamente alla conferma di eliminazione.`
+    );
+
+    if (wantZip) {
+      try {
+        await downloadSelectedPdfsZip();
+      } catch (e) {
+        console.error(e);
+        alert(e?.message || "Errore creazione ZIP.");
+        return;
+      }
+    }
+
+    const ok = window.confirm(
+      `Confermi l'eliminazione definitiva di ${selectedPaths.length} PDF selezionati?`
+    );
     if (!ok) return;
 
     try {
@@ -628,8 +676,6 @@ export default function DatorePanel() {
         selectedClauses: safeClauseLabels,
       });
 
-      // Desktop: scarica subito
-      // Mobile: non aprire automaticamente, solo salva nello storico
       if (!isMobileBrowser()) {
         const url = URL.createObjectURL(pdfBlob);
 
@@ -727,7 +773,7 @@ export default function DatorePanel() {
           .datoreTotalsRight{
             margin-left: 0 !important;
             width: 100%;
-            justify-content: stretch !important;
+            justifyContent: stretch !important;
           }
 
           .datoreTotalsRight > *{
