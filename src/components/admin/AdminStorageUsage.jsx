@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabaseAdmin } from "../../supabaseAdminClient";
 
-const BUCKET_ID = "quote_files";
 const CONFIGURED_LIMIT_GB = 1;
+
+// Metti qui i bucket che vuoi monitorare davvero.
+const MONITORED_BUCKETS = ["quote_files", "service_files"];
 
 function formatBytes(bytes) {
   const value = Number(bytes || 0);
@@ -34,8 +36,13 @@ function getCreatedAt(row) {
   return row?.created_at || row?.updated_at || null;
 }
 
-async function listAllFilesRecursive(bucket, path = "") {
-  const collected = [];
+function joinPath(base, name) {
+  if (!base) return name;
+  return `${base}/${name}`;
+}
+
+async function listRecursive(bucket, path = "") {
+  let all = [];
   let offset = 0;
   const pageSize = 100;
 
@@ -55,46 +62,71 @@ async function listAllFilesRecursive(bucket, path = "") {
       const name = String(row?.name || "");
       if (!name) continue;
 
-      const fullPath = path ? `${path}/${name}` : name;
+      const fullPath = joinPath(path, name);
 
-      // cartella
-      if (!row?.id) {
-        const nested = await listAllFilesRecursive(bucket, fullPath);
-        collected.push(...nested);
-        continue;
+      // Nelle risposte di Supabase, le cartelle spesso non hanno id
+      const isFolder = !row?.id;
+
+      if (isFolder) {
+        const nested = await listRecursive(bucket, fullPath);
+        all = all.concat(nested);
+      } else {
+        all.push({
+          ...row,
+          bucket,
+          fullPath,
+        });
       }
-
-      // file
-      collected.push({
-        ...row,
-        fullPath,
-      });
     }
 
     if (rows.length < pageSize) break;
     offset += pageSize;
   }
 
-  return collected;
+  return all;
 }
 
-function groupByCompanyPrefix(rows) {
+function groupByTopFolder(rows) {
   const map = new Map();
 
   for (const row of rows) {
     const fullPath = String(row?.fullPath || row?.name || "");
-    const topFolder = fullPath.split("/")[0] || "senza-cartella";
+    const firstChunk = fullPath.split("/")[0] || "root";
+    const key = `${row.bucket} / ${firstChunk}`;
     const size = getFileSize(row);
 
-    if (!map.has(topFolder)) {
-      map.set(topFolder, {
-        key: topFolder,
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
         files: 0,
         bytes: 0,
       });
     }
 
-    const curr = map.get(topFolder);
+    const curr = map.get(key);
+    curr.files += 1;
+    curr.bytes += size;
+  }
+
+  return Array.from(map.values()).sort((a, b) => b.bytes - a.bytes);
+}
+
+function groupByBucket(rows) {
+  const map = new Map();
+
+  for (const row of rows) {
+    const key = row.bucket;
+    const size = getFileSize(row);
+
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        files: 0,
+        bytes: 0,
+      });
+    }
+
+    const curr = map.get(key);
     curr.files += 1;
     curr.bytes += size;
   }
@@ -152,8 +184,14 @@ export default function AdminStorageUsage() {
     setErr("");
 
     try {
-      const data = await listAllFilesRecursive(BUCKET_ID, "");
-      setRows(Array.isArray(data) ? data : []);
+      const all = [];
+
+      for (const bucket of MONITORED_BUCKETS) {
+        const files = await listRecursive(bucket, "");
+        all.push(...files);
+      }
+
+      setRows(all);
     } catch (e) {
       console.error(e);
       setErr(e?.message || "Errore caricamento utilizzo storage.");
@@ -186,7 +224,8 @@ export default function AdminStorageUsage() {
       pct,
       remainingBytes,
       latestDate: dates[0] || null,
-      byCompany: groupByCompanyPrefix(rows),
+      byBucket: groupByBucket(rows),
+      byTopFolder: groupByTopFolder(rows),
     };
   }, [rows]);
 
@@ -195,9 +234,9 @@ export default function AdminStorageUsage() {
 
   const notice =
     stats.pct >= 90
-      ? "Spazio quasi pieno: conviene svuotare i preventivi archiviati."
+      ? "Spazio quasi pieno: conviene svuotare i file più pesanti."
       : stats.pct >= 75
-      ? "Spazio in crescita: tieni monitorato il bucket dei preventivi."
+      ? "Spazio in crescita: tieni monitorato l'archivio."
       : "Situazione sotto controllo.";
 
   return (
@@ -240,8 +279,14 @@ export default function AdminStorageUsage() {
           transition: width .25s ease;
         }
 
+        .adminStorageSectionTitle {
+          margin-top: 18px;
+          font-weight: 950;
+          color: #0b1224;
+        }
+
         .adminStorageTable {
-          margin-top: 16px;
+          margin-top: 12px;
           display: grid;
           gap: 10px;
         }
@@ -277,10 +322,10 @@ export default function AdminStorageUsage() {
       <div className="adminStorageTop">
         <div>
           <div style={{ fontSize: 24, fontWeight: 950, color: "#0b1224" }}>
-            Utilizzo storage preventivi
+            Utilizzo storage
           </div>
           <div style={{ marginTop: 6, color: "#475569", fontWeight: 800 }}>
-            Monitoraggio bucket <b>{BUCKET_ID}</b> per capire quando liberare spazio.
+            Monitoraggio bucket: <b>{MONITORED_BUCKETS.join(", ")}</b>
           </div>
         </div>
 
@@ -354,7 +399,7 @@ export default function AdminStorageUsage() {
           }}
         >
           <div style={{ fontWeight: 950, color: "#0b1224" }}>
-            Riempimento: {stats.pct.toFixed(1)}%
+            Riempimento: {stats.pct.toFixed(2)}%
           </div>
           <div
             style={{
@@ -389,29 +434,58 @@ export default function AdminStorageUsage() {
           </div>
         ) : (
           <div style={{ marginTop: 10, color: "#64748b", fontWeight: 800 }}>
-            Nessun file presente nel bucket.
+            Nessun file presente nei bucket monitorati.
           </div>
         )}
       </div>
 
-      <div style={{ marginTop: 18, fontWeight: 950, color: "#0b1224" }}>
-        Utilizzo per cartella principale
-      </div>
+      <div className="adminStorageSectionTitle">Utilizzo per bucket</div>
 
-      {stats.byCompany.length === 0 ? (
+      {stats.byBucket.length === 0 ? (
         <div style={{ marginTop: 10, color: "#64748b", fontWeight: 800 }}>
           Nessun dato disponibile.
         </div>
       ) : (
         <div className="adminStorageTable">
-          {stats.byCompany.map((item) => (
+          {stats.byBucket.map((item) => (
             <div key={item.key} className="adminStorageRow">
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 950, color: "#0b1224", wordBreak: "break-word" }}>
                   {item.key}
                 </div>
                 <div style={{ marginTop: 4, color: "#64748b", fontWeight: 800 }}>
-                  Cartella / prefisso
+                  Bucket
+                </div>
+              </div>
+
+              <div style={{ fontWeight: 900, color: "#334155" }}>
+                {item.files} file
+              </div>
+
+              <div style={{ fontWeight: 950, color: "#0b1224" }}>
+                {formatBytes(item.bytes)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="adminStorageSectionTitle">Utilizzo per cartella principale</div>
+
+      {stats.byTopFolder.length === 0 ? (
+        <div style={{ marginTop: 10, color: "#64748b", fontWeight: 800 }}>
+          Nessun dato disponibile.
+        </div>
+      ) : (
+        <div className="adminStorageTable">
+          {stats.byTopFolder.map((item) => (
+            <div key={item.key} className="adminStorageRow">
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 950, color: "#0b1224", wordBreak: "break-word" }}>
+                  {item.key}
+                </div>
+                <div style={{ marginTop: 4, color: "#64748b", fontWeight: 800 }}>
+                  Bucket / cartella
                 </div>
               </div>
 
