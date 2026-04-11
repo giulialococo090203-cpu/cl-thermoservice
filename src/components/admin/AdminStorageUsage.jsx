@@ -2,9 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { supabaseAdmin } from "../../supabaseAdminClient";
 
 const CONFIGURED_LIMIT_GB = 1;
-
-// Metti qui i bucket che vuoi monitorare davvero.
 const MONITORED_BUCKETS = ["quote_files", "service_files"];
+const AUTO_REFRESH_MS = 20000;
 
 function formatBytes(bytes) {
   const value = Number(bytes || 0);
@@ -63,8 +62,6 @@ async function listRecursive(bucket, path = "") {
       if (!name) continue;
 
       const fullPath = joinPath(path, name);
-
-      // Nelle risposte di Supabase, le cartelle spesso non hanno id
       const isFolder = !row?.id;
 
       if (isFolder) {
@@ -138,6 +135,7 @@ export default function AdminStorageUsage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [rows, setRows] = useState([]);
+  const [lastRefreshAt, setLastRefreshAt] = useState(null);
 
   const cardStyle = {
     background: "rgba(255,255,255,0.85)",
@@ -192,6 +190,7 @@ export default function AdminStorageUsage() {
       }
 
       setRows(all);
+      setLastRefreshAt(new Date().toISOString());
     } catch (e) {
       console.error(e);
       setErr(e?.message || "Errore caricamento utilizzo storage.");
@@ -203,6 +202,29 @@ export default function AdminStorageUsage() {
 
   useEffect(() => {
     loadUsage();
+
+    const intervalId = window.setInterval(() => {
+      loadUsage();
+    }, AUTO_REFRESH_MS);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        loadUsage();
+      }
+    };
+
+    const handleFocus = () => {
+      loadUsage();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleFocus);
+    };
   }, []);
 
   const stats = useMemo(() => {
@@ -327,6 +349,19 @@ export default function AdminStorageUsage() {
           <div style={{ marginTop: 6, color: "#475569", fontWeight: 800 }}>
             Monitoraggio bucket: <b>{MONITORED_BUCKETS.join(", ")}</b>
           </div>
+          {lastRefreshAt ? (
+            <div style={{ marginTop: 6, color: "#64748b", fontWeight: 800 }}>
+              Ultimo aggiornamento:{" "}
+              {new Date(lastRefreshAt).toLocaleString("it-IT", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              })}
+            </div>
+          ) : null}
         </div>
 
         <button type="button" style={btn("ghost")} onClick={loadUsage} disabled={loading}>
