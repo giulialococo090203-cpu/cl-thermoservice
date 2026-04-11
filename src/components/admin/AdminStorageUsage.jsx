@@ -63,8 +63,10 @@ async function listRecursive(bucket, path = "") {
 
       const fullPath = joinPath(path, name);
 
-      // cartella
-      if (!row?.id) {
+      // FIX: le cartelle non hanno metadata utile, i file sì
+      const isFolder = !row?.metadata || Object.keys(row.metadata).length === 0;
+
+      if (isFolder) {
         const nested = await listRecursive(bucket, fullPath);
         all = all.concat(nested);
       } else {
