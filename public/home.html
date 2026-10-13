@@ -2310,7 +2310,7 @@ async function loadLive() {
   const tasks = {
     services: sbGet(`services?select=title,description,long_description,pill,sort_order&company_id=eq.${C}&is_active=eq.true&order=sort_order`).then(r => { if (r.length) d.services = r; }),
     about: sbGet(`about_content?select=payload&company_id=eq.${C}&order=updated_at.desc&limit=1`).then(r => { if (r[0]?.payload) Object.assign(d.about, r[0].payload); }),
-    coverage: sbGet(`coverage_content?select=payload&company_id=eq.${C}&limit=1`).then(r => { if (r[0]?.payload) Object.assign(d.coverage, r[0].payload); }),
+    coverage: sbGet(`coverage_content?select=payload&company_id=eq.${C}&order=updated_at.desc&limit=1`).then(r => { if (r[0]?.payload) Object.assign(d.coverage, r[0].payload); }),
     certs: sbGet(`certifications_content?select=payload&company_id=eq.${C}&order=updated_at.desc&limit=1`).then(r => { if (r[0]?.payload) Object.assign(d.certs, r[0].payload); }),
     faq: sbGet(`faq_content?select=payload&company_id=eq.${C}&order=updated_at.desc&limit=1`).then(r => { if (r[0]?.payload) Object.assign(d.faq, r[0].payload); }),
     reviews: sbGet('reviews?select=name,rating,message,technician_name,reply_text&order=created_at.desc').then(r => { if (Array.isArray(r)) d.reviews = r; }),
